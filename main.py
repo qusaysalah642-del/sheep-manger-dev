@@ -21,7 +21,7 @@ for key in ["success_msg", "toast", "editing_hist_id", "splash_shown"]:
     if key not in st.session_state:
         st.session_state[key] = None
 
-# ─── شاشة ترحيب (تظهر مرة واحدة) ──────────────────────────────────────
+# ─── شاشة ترحيب ──────────────────────────────────────────────────────
 if not st.session_state.splash_shown:
     st.markdown("""
     <div id="splash" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#0b1f16; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; animation: fadeOut 2s ease-in forwards; animation-delay:1.5s;">
@@ -47,7 +47,7 @@ if st.session_state.toast:
     st.toast(st.session_state.toast)
     st.session_state.toast = None
 
-# ─── إنشاء المجلدات تلقائياً ─────────────────────────────────────────
+# ─── إنشاء المجلدات ──────────────────────────────────────────────────
 for folder in ["images", "backups", "data"]:
     os.makedirs(folder, exist_ok=True)
 
@@ -186,7 +186,7 @@ if "history" not in st.session_state:
     st.session_state.history = load_data(HISTORY_FILE, HISTORY_COLS)
 
 auto_backup()
-# ─── CSS مع أنيميشن ─────────────────────────────────────────────────
+# ─── CSS مع أنيميشن وتحسين البطاقات ─────────────────────────────────
 st.markdown("""
 <style>
     body { direction: rtl; }
@@ -279,6 +279,51 @@ st.markdown("""
         0% { opacity: 0; transform: translateX(-20px); }
         100% { opacity: 1; transform: translateX(0); }
     }
+    
+    /* ─── بطاقات الإحصائيات الأفقية ─── */
+    .stats-container {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        justify-content: space-around;
+        margin-bottom: 20px;
+    }
+    .stat-card {
+        background: #123326;
+        border-radius: 16px;
+        padding: 18px 25px;
+        flex: 1;
+        min-width: 150px;
+        text-align: center;
+        border: 1px solid rgba(255,255,255,0.06);
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        border-color: #4c9a6a;
+        box-shadow: 0 8px 30px rgba(76,154,106,0.15);
+    }
+    .stat-icon {
+        font-size: 28px;
+        display: block;
+        margin-bottom: 5px;
+    }
+    .stat-number {
+        font-size: 32px;
+        font-weight: 800;
+        color: white;
+        line-height: 1.2;
+    }
+    .stat-label {
+        font-size: 14px;
+        color: #93b3a1;
+        margin-top: 4px;
+    }
+    .stat-card.green .stat-number { color: #4c9a6a; }
+    .stat-card.blue .stat-number { color: #4a90d9; }
+    .stat-card.pink .stat-number { color: #e87a7a; }
+    .stat-card.gold .stat-number { color: #d3a15c; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -313,7 +358,7 @@ TREATMENT_OPTS = {
 # ─── الأقسام الرئيسية ──────────────────────────────────────────────
 tab1, tab2, tab3, tab4 = st.tabs(["🏠 القطيع", "💉 إجراء طبي", "📋 السجل", "➕ إدارة النظام"])
 
-# ─── 1. القطيع ───
+# ─── 1. القطيع (مع بطاقات إحصائيات أفقية) ───
 with tab1:
     st.subheader("📊 إحصائيات القطيع")
     df = st.session_state.herd
@@ -323,11 +368,31 @@ with tab1:
         females = len(df[df["الجنس"].isin(["أنثى", "أنثى صغيرة"])])
         young = len(df[df["الجنس"].str.contains("صغير", na=False)])
 
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("🐑 العدد الكلي", total)
-        col2.metric("♂️ ذكور", males)
-        col3.metric("♀️ إناث", females)
-        col4.metric("👶 صغار", young)
+        # عرض البطاقات الأفقية
+        st.markdown(f"""
+        <div class="stats-container">
+            <div class="stat-card green">
+                <span class="stat-icon">🐑</span>
+                <div class="stat-number">{total}</div>
+                <div class="stat-label">العدد الكلي</div>
+            </div>
+            <div class="stat-card blue">
+                <span class="stat-icon">♂️</span>
+                <div class="stat-number">{males}</div>
+                <div class="stat-label">ذكور</div>
+            </div>
+            <div class="stat-card pink">
+                <span class="stat-icon">♀️</span>
+                <div class="stat-number">{females}</div>
+                <div class="stat-label">إناث</div>
+            </div>
+            <div class="stat-card gold">
+                <span class="stat-icon">👶</span>
+                <div class="stat-number">{young}</div>
+                <div class="stat-label">صغار</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
         search_term = st.text_input("🔍 بحث بالقلادة", placeholder="اكتب للبحث...")
         filtered_df = df.copy()
