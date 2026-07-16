@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import streamlit as st
 import pandas as pd
 import json
@@ -8,7 +9,6 @@ import time
 import logging
 from datetime import datetime
 from PIL import Image
-import io
 
 # ─── إعداد التسجيل (Logging) ──────────────────────────────────────────────
 logging.basicConfig(
@@ -34,16 +34,15 @@ if st.session_state.toast:
     st.toast(st.session_state.toast)
     st.session_state.toast = None
 
-# ─── نظام الألوان والخطوط (Design tokens) ──────────────────────────────────
-C_BG_DEEP = "#0b1f16"        
-C_BG_PANEL = "#123326"       
-C_BG_PANEL_2 = "#16402f"     
+# ─── نظام الألوان والخطوط ──────────────────────────────────────────────────
+C_BG_DEEP = "#0b1f16"
+C_BG_PANEL = "#123326"
 C_BORDER = "rgba(255,255,255,0.08)"
 C_TEXT = "#eef6f0"
 C_TEXT_MUTED = "#93b3a1"
-C_GREEN = "#4c9a6a"          
+C_GREEN = "#4c9a6a"
 C_GREEN_DARK = "#2f6b48"
-C_AMBER = "#d3a15c"          
+C_AMBER = "#d3a15c"
 C_AMBER_DARK = "#a97c3c"
 C_DANGER = "#e2665a"
 C_BLUE = "#4a90d9"
@@ -54,139 +53,123 @@ for folder in ["images", "backups", "data"]:
     if not os.path.exists(folder):
         os.makedirs(folder)
 
-# ─── CSS ─────────────────────────────────────────────────────────────
+# ─── CSS ─────────────────────────────────────────────────────────────────────
 st.markdown("""
-<style>  
-    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&family=Tajawal:wght@400;500;700&display=swap');  
-  
-    html, body, [class*="css"] { font-family: 'Tajawal', sans-serif; direction: rtl; text-align: right; }  
-    h1, h2, h3, .app-hero-title { font-family: 'Cairo', sans-serif; }  
-  
-    .stApp { background: linear-gradient(180deg, #0b1f16 0%, #0e2a1e 100%); color: #eef6f0; }  
-  
-    .app-hero {  
-        display: flex; align-items: center; gap: 18px;  
-        background: linear-gradient(135deg, #123326 0%, #0b1f16 100%);  
-        border: 1px solid rgba(255,255,255,0.08);  
-        border-radius: 18px;  
-        padding: 22px 28px;  
-        margin-bottom: 22px;  
-        box-shadow: 0 6px 24px rgba(0,0,0,0.25);  
-    }  
-    .app-hero-icon {  
-        font-size: 40px; line-height: 1;  
-        background: linear-gradient(135deg, #d3a15c, #a97c3c);  
-        width: 64px; height: 64px; border-radius: 16px;  
-        display: flex; align-items: center; justify-content: center;  
-        flex-shrink: 0;  
-        box-shadow: 0 4px 14px rgba(211,161,92,0.25);  
-    }  
-    .app-hero-title { font-size: 26px; font-weight: 800; margin: 0; color: #eef6f0; }  
-    .app-hero-subtitle { font-size: 14px; color: #93b3a1; margin-top: 2px; }  
-  
-    .stTabs [data-baseweb="tab-list"] { gap: 6px; background: transparent; justify-content: center; flex-wrap: wrap; }  
-    .stTabs [data-baseweb="tab"] {  
-        background: #123326;  
-        border: 1px solid rgba(255,255,255,0.08);  
-        border-radius: 999px !important;  
-        padding: 8px 20px;  
-        color: #93b3a1;  
-        font-weight: 700;  
-    }  
-    .stTabs [aria-selected="true"] {  
-        background: linear-gradient(135deg, #4c9a6a 0%, #2f6b48 100%) !important;  
-        color: white !important;  
-        border: 1px solid #4c9a6a !important;  
-    }  
-  
-    [data-testid="stExpander"] {  
-        background: #123326;  
-        border: 1px solid rgba(255,255,255,0.08) !important;  
-        border-radius: 14px !important;  
-        margin-bottom: 10px;  
-    }  
-  
-    .stButton > button {  
-        background: linear-gradient(135deg, #4c9a6a 0%, #2f6b48 100%);  
-        color: white; border: none; border-radius: 10px; width: 100%;  
-        font-weight: 700; padding: 10px 0;  
-        transition: all 0.3s ease;  
-    }  
-    .stButton > button:hover { filter: brightness(1.12); transform: translateY(-2px); }  
-    .stButton > button[kind="primary"] { background: linear-gradient(135deg, #e2665a 0%, #b8443a 100%); }  
-    .stFormSubmitButton > button {  
-        background: linear-gradient(135deg, #d3a15c 0%, #a97c3c 100%) !important;  
-        color: #24170a !important; border: none; border-radius: 10px; font-weight: 800;  
-        transition: all 0.3s ease;  
-    }  
-    .stFormSubmitButton > button:hover { filter: brightness(1.12); transform: translateY(-2px); }  
-  
-    .stTextInput input, .stNumberInput input, .stDateInput input, .stSelectbox div[data-baseweb="select"] > div {  
-        background: #0b1f16 !important; border: 1px solid rgba(255,255,255,0.08) !important;  
-        border-radius: 10px !important; color: #eef6f0 !important;  
-    }  
-  
-    .ear-tag {  
-        display: inline-flex; align-items: center; gap: 8px;  
-        background: linear-gradient(135deg, #d3a15c 0%, #a97c3c 100%);  
-        color: #24170a; font-weight: 800; font-size: 13px;  
-        padding: 5px 14px 5px 10px; border-radius: 4px 14px 14px 4px; margin: 2px 4px 2px 0;  
-    }  
-    .ear-tag::before {  
-        content: ''; width: 7px; height: 7px; border-radius: 50%;  
-        background: #0b1f16; border: 2px solid rgba(0,0,0,0.2); flex-shrink: 0;  
-    }  
-    .info-chip {  
-        display: inline-flex; align-items: center; gap: 6px;  
-        background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);  
-        color: #eef6f0; padding: 4px 12px; border-radius: 999px; font-size: 13px; margin: 2px 4px 2px 0;  
-    }  
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&family=Tajawal:wght@400;500;700&display=swap');
 
-    @media (max-width: 768px) {  
-        .app-hero {  
-            flex-direction: column;  
-            text-align: center;  
-            padding: 16px;  
-        }  
-        .app-hero-icon {  
-            width: 50px;  
-            height: 50px;  
-            font-size: 30px;  
-        }  
-        .app-hero-title {  
-            font-size: 20px;  
-        }  
-        .stTabs [data-baseweb="tab"] {  
-            padding: 6px 12px;  
-            font-size: 12px;  
-        }  
-        [data-testid="column"] {  
-            min-width: 100%;  
-        }  
-    }  
+    html, body, [class*="css"] { font-family: 'Tajawal', sans-serif; direction: rtl; text-align: right; }
+    h1, h2, h3, .app-hero-title { font-family: 'Cairo', sans-serif; }
 
-    .gender-male { background: #4a90d9 !important; }  
-    .gender-female { background: #e87a7a !important; }  
-</style>  
+    .stApp { background: linear-gradient(180deg, #0b1f16 0%, #0e2a1e 100%); color: #eef6f0; }
+
+    .app-hero {
+        display: flex; align-items: center; gap: 18px;
+        background: linear-gradient(135deg, #123326 0%, #0b1f16 100%);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 18px;
+        padding: 22px 28px;
+        margin-bottom: 22px;
+        box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+    }
+    .app-hero-icon {
+        font-size: 40px; line-height: 1;
+        background: linear-gradient(135deg, #d3a15c, #a97c3c);
+        width: 64px; height: 64px; border-radius: 16px;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 4px 14px rgba(211,161,92,0.25);
+    }
+    .app-hero-title { font-size: 26px; font-weight: 800; margin: 0; color: #eef6f0; }
+    .app-hero-subtitle { font-size: 14px; color: #93b3a1; margin-top: 2px; }
+
+    .stTabs [data-baseweb="tab-list"] { gap: 6px; background: transparent; justify-content: center; flex-wrap: wrap; }
+    .stTabs [data-baseweb="tab"] {
+        background: #123326;
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 999px !important;
+        padding: 8px 20px;
+        color: #93b3a1;
+        font-weight: 700;
+    }
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #4c9a6a 0%, #2f6b48 100%) !important;
+        color: white !important;
+        border: 1px solid #4c9a6a !important;
+    }
+
+    [data-testid="stExpander"] {
+        background: #123326;
+        border: 1px solid rgba(255,255,255,0.08) !important;
+        border-radius: 14px !important;
+        margin-bottom: 10px;
+    }
+
+    .stButton > button {
+        background: linear-gradient(135deg, #4c9a6a 0%, #2f6b48 100%);
+        color: white; border: none; border-radius: 10px; width: 100%;
+        font-weight: 700; padding: 10px 0;
+        transition: all 0.3s ease;
+    }
+    .stButton > button:hover { filter: brightness(1.12); transform: translateY(-2px); }
+    .stButton > button[kind="primary"] { background: linear-gradient(135deg, #e2665a 0%, #b8443a 100%); }
+    .stFormSubmitButton > button {
+        background: linear-gradient(135deg, #d3a15c 0%, #a97c3c 100%) !important;
+        color: #24170a !important; border: none; border-radius: 10px; font-weight: 800;
+        transition: all 0.3s ease;
+    }
+    .stFormSubmitButton > button:hover { filter: brightness(1.12); transform: translateY(-2px); }
+
+    .stTextInput input, .stNumberInput input, .stDateInput input, .stSelectbox div[data-baseweb="select"] > div {
+        background: #0b1f16 !important; border: 1px solid rgba(255,255,255,0.08) !important;
+        border-radius: 10px !important; color: #eef6f0 !important;
+    }
+
+    .ear-tag {
+        display: inline-flex; align-items: center; gap: 8px;
+        background: linear-gradient(135deg, #d3a15c 0%, #a97c3c 100%);
+        color: #24170a; font-weight: 800; font-size: 13px;
+        padding: 5px 14px 5px 10px; border-radius: 4px 14px 14px 4px; margin: 2px 4px 2px 0;
+    }
+    .ear-tag::before {
+        content: ''; width: 7px; height: 7px; border-radius: 50%;
+        background: #0b1f16; border: 2px solid rgba(0,0,0,0.2); flex-shrink: 0;
+    }
+    .info-chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+        color: #eef6f0; padding: 4px 12px; border-radius: 999px; font-size: 13px; margin: 2px 4px 2px 0;
+    }
+
+    @media (max-width: 768px) {
+        .app-hero { flex-direction: column; text-align: center; padding: 16px; }
+        .app-hero-icon { width: 50px; height: 50px; font-size: 30px; }
+        .app-hero-title { font-size: 20px; }
+        .stTabs [data-baseweb="tab"] { padding: 6px 12px; font-size: 12px; }
+        [data-testid="column"] { min-width: 100%; }
+    }
+
+    .gender-male { background: #4a90d9 !important; }
+    .gender-female { background: #e87a7a !important; }
+</style>
 """, unsafe_allow_html=True)
 
 # ─── بانر الهيدر ─────────────────────────────────────────────────────────────
 st.markdown("""
-<div class="app-hero">  
-    <div class="app-hero-icon">🐑</div>  
-    <div>  
-        <p class="app-hero-title">Sheep Manager Pro</p>  
-        <p class="app-hero-subtitle">إدارة القطيع، التطعيمات، والسجل الطبي في مكان واحد</p>  
-    </div>  
-</div>  
+<div class="app-hero">
+    <div class="app-hero-icon">🐑</div>
+    <div>
+        <p class="app-hero-title">Sheep Manager Pro</p>
+        <p class="app-hero-subtitle">إدارة القطيع، التطعيمات، والسجل الطبي في مكان واحد</p>
+    </div>
+</div>
 """, unsafe_allow_html=True)
 
-# عرض رسائل النجاح الثابتة
 if st.session_state.success_msg:
     st.success(st.session_state.success_msg)
     st.session_state.success_msg = None
 
-# ─── دوال مساعدة ──────────────────────────────────────────────────
+# ─── دوال مساعدة ──────────────────────────────────────────────────────────
 
 def safe_literal_eval(value, default=None):
     if default is None:
@@ -257,10 +240,8 @@ def auto_backup():
     backup_dir = "backups"
     if not os.path.exists(backup_dir):
         os.makedirs(backup_dir)
-    
     date_str = datetime.now().strftime("%Y-%m-%d")
     backup_file = f"{backup_dir}/auto_backup_{date_str}.json"
-    
     if not os.path.exists(backup_file):
         try:
             backup_dict = {
@@ -330,7 +311,6 @@ if "herd" not in st.session_state:
 if "history" not in st.session_state:
     st.session_state.history = load_data(HISTORY_FILE, HISTORY_COLS)
 
-# ─── تنفيذ النسخ الاحتياطي التلقائي ──────────────────────────────────────
 auto_backup()
 
 # ─── شريط جانبي ──────────────────────────────────────────────────────────
@@ -355,39 +335,36 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs(["🏠 القطيع", "💉 إجراء ط
 with tab1:
     st.subheader("📊 إحصائيات القطيع")
     df = st.session_state.herd
-    
     if not df.empty:
         col1, col2, col3, col4 = st.columns(4)
         col1.metric("🐑 العدد الكلي", len(df))
         col2.metric("♂️ ذكور", len(df[df["الجنس"].isin(["ذكر", "ذكر صغير"])]))
         col3.metric("♀️ إناث", len(df[df["الجنس"].isin(["أنثى", "أنثى صغيرة"])]))
         col4.metric("👶 صغار", len(df[df["الجنس"].str.contains("صغير", na=False)]))
-        
         st.divider()
-        
+
         search_col, filter_col = st.columns([2, 1])
         with search_col:
             search_term = st.text_input("🔍 بحث بالقلادة أو المعرف", placeholder="اكتب للبحث...", key="search_sheep")
         with filter_col:
             gender_filter = st.selectbox("تصفية حسب الجنس", ["الكل", "ذكر", "أنثى", "صغار"], key="gender_filter")
-        
+
         filtered_df = df.copy()
         if search_term:
-            filtered_df = filtered_df[filtered_df["القلادة"].str.contains(search_term, case=False, na=False) | 
+            filtered_df = filtered_df[filtered_df["القلادة"].str.contains(search_term, case=False, na=False) |
                                       filtered_df["ID"].str.contains(search_term, case=False, na=False)]
         if gender_filter != "الكل":
             if gender_filter == "صغار":
                 filtered_df = filtered_df[filtered_df["الجنس"].str.contains("صغير", na=False)]
             else:
                 filtered_df = filtered_df[filtered_df["الجنس"] == gender_filter]
-        
+
         if filtered_df.empty:
             st.info("لا توجد نتائج تطابق معايير البحث")
         else:
             for idx, row in filtered_df.iterrows():
                 kids_ids = safe_literal_eval(row.get('الأبناء', '[]'))
                 gender_class = "gender-male" if "ذكر" in row['الجنس'] else "gender-female"
-                
                 with st.expander(f"🏷️ القلادة: {row['القلادة']} | {row['الجنس']}"):
                     col_img, col_info = st.columns([1, 3])
                     with col_img:
@@ -417,7 +394,6 @@ with tab2:
         herd_ids = st.session_state.herd["ID"].tolist()
         selected_ids = st.multiselect("اختر الأغنام المستهدفة:", herd_ids, format_func=format_sheep_label)
         action_type = st.radio("نوع الإجراء:", ["تطعيم", "جرعة طفيلية", "تغطيس"], horizontal=True)
-        
         if action_type == "تطعيم":
             opts = ['إيفومك', 'معوي/دموي', 'طاعون', 'جدري']
         elif action_type == "جرعة طفيلية":
@@ -427,7 +403,7 @@ with tab2:
         treatment = st.selectbox("العلاج:", opts)
         date = str(st.date_input("التاريخ:"))
         img_file = st.file_uploader("صورة التوثيق (اختياري)", type=['jpg', 'png'])
-        
+
         if st.button("💾 حفظ الإجراء", use_container_width=True):
             if selected_ids:
                 with st.spinner("جاري حفظ الإجراء الطبي..."):
@@ -449,23 +425,20 @@ with tab2:
     else:
         st.warning("يجب إضافة أغنام أولاً.")
 
-# ─── 3. السجل الطبي (تم إصلاح الخطأ) ───
+# ─── 3. السجل الطبي ───
 with tab3:
     st.subheader("📋 السجل الطبي")
-    
     hist_tab1, hist_tab2 = st.tabs(["🔍 عرض السجلات", "✏️ تعديل سجل"])
-    
+
     with hist_tab1:
         if not st.session_state.history.empty:
             search_hist = st.text_input("🔍 بحث في السجلات", placeholder="ابحث بالإجراء أو العلاج...")
             hist_df = st.session_state.history.copy()
             if search_hist:
-                # تم إصلاح الخطأ هنا - استخدام الأسماء الصحيحة للأعمدة
                 hist_df = hist_df[
-                    hist_df["الإجراء"].str.contains(search_hist, case=False, na=False) | 
+                    hist_df["الإجراء"].str.contains(search_hist, case=False, na=False) |
                     hist_df["العلاج"].str.contains(search_hist, case=False, na=False)
                 ]
-            
             if hist_df.empty:
                 st.info("لا توجد سجلات تطابق البحث")
             else:
@@ -474,7 +447,6 @@ with tab3:
                         st.write(f"**الأغنام المعالجة:** {row['الأغنام']}")
                         if row.get('صورة') and os.path.exists(row['صورة']):
                             st.image(row['صورة'], width=200)
-                        
                         if st.button(f"🗑️ حذف السجل", key=f"del_hist_{idx}", type="primary"):
                             with st.spinner("جاري حذف السجل..."):
                                 safe_delete_image(row.get('صورة'))
@@ -485,5 +457,18 @@ with tab3:
                                 st.rerun()
         else:
             st.info("لا توجد سجلات طبية حتى الآن.")
-            
-    with hist_tab
+
+    with hist_tab2:
+        if not st.session_state.history.empty:
+            def format_hist_label(hist_idx):
+                h_row = st.session_state.history.iloc[hist_idx]
+                h_sheep = str(h_row.get('الأغنام', ''))
+                return f"🗓️ {h_row['التاريخ']} - {h_row['الإجراء']} ({h_row['العلاج']}) - الأغنام: {h_sheep[:30]}..."
+
+            hist_indices = list(range(len(st.session_state.history)))
+            selected_hist_idx = st.selectbox("اختر السجل الطبي المراد تعديله:", hist_indices, format_func=format_hist_label)
+
+            if selected_hist_idx is not None:
+                hist_row = st.session_state.history.iloc[selected_hist_idx]
+                with st.form("edit_history_form"):
+                    st.markdown("### ✏️ تعديل بيانات السجل 
