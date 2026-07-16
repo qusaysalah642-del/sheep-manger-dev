@@ -54,129 +54,119 @@ for folder in ["images", "backups", "data"]:
     if not os.path.exists(folder):
         os.makedirs(folder)
 
-# ─── CSS الموسع ─────────────────────────────────────────────────────────────
-st.markdown(f"""
+# ─── CSS ─────────────────────────────────────────────────────────────
+st.markdown("""
 <style>  
     @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&family=Tajawal:wght@400;500;700&display=swap');  
   
-    html, body, [class*="css"] {{ font-family: 'Tajawal', sans-serif; direction: rtl; text-align: right; }}  
-    h1, h2, h3, .app-hero-title {{ font-family: 'Cairo', sans-serif; }}  
+    html, body, [class*="css"] { font-family: 'Tajawal', sans-serif; direction: rtl; text-align: right; }  
+    h1, h2, h3, .app-hero-title { font-family: 'Cairo', sans-serif; }  
   
-    .stApp {{ background: linear-gradient(180deg, {C_BG_DEEP} 0%, #0e2a1e 100%); color: {C_TEXT}; }}  
+    .stApp { background: linear-gradient(180deg, #0b1f16 0%, #0e2a1e 100%); color: #eef6f0; }  
   
-    /* ─── الهيدر الرئيسي ─── */  
-    .app-hero {{  
+    .app-hero {  
         display: flex; align-items: center; gap: 18px;  
-        background: linear-gradient(135deg, {C_BG_PANEL} 0%, {C_BG_DEEP} 100%);  
-        border: 1px solid {C_BORDER};  
+        background: linear-gradient(135deg, #123326 0%, #0b1f16 100%);  
+        border: 1px solid rgba(255,255,255,0.08);  
         border-radius: 18px;  
         padding: 22px 28px;  
         margin-bottom: 22px;  
         box-shadow: 0 6px 24px rgba(0,0,0,0.25);  
-    }}  
-    .app-hero-icon {{  
+    }  
+    .app-hero-icon {  
         font-size: 40px; line-height: 1;  
-        background: linear-gradient(135deg, {C_AMBER}, {C_AMBER_DARK});  
+        background: linear-gradient(135deg, #d3a15c, #a97c3c);  
         width: 64px; height: 64px; border-radius: 16px;  
         display: flex; align-items: center; justify-content: center;  
         flex-shrink: 0;  
         box-shadow: 0 4px 14px rgba(211,161,92,0.25);  
-    }}  
-    .app-hero-title {{ font-size: 26px; font-weight: 800; margin: 0; color: {C_TEXT}; }}  
-    .app-hero-subtitle {{ font-size: 14px; color: {C_TEXT_MUTED}; margin-top: 2px; }}  
+    }  
+    .app-hero-title { font-size: 26px; font-weight: 800; margin: 0; color: #eef6f0; }  
+    .app-hero-subtitle { font-size: 14px; color: #93b3a1; margin-top: 2px; }  
   
-    /* ─── تبويبات علوية ─── */  
-    .stTabs [data-baseweb="tab-list"] {{ gap: 6px; background: transparent; justify-content: center; flex-wrap: wrap; }}  
-    .stTabs [data-baseweb="tab"] {{  
-        background: {C_BG_PANEL};  
-        border: 1px solid {C_BORDER};  
+    .stTabs [data-baseweb="tab-list"] { gap: 6px; background: transparent; justify-content: center; flex-wrap: wrap; }  
+    .stTabs [data-baseweb="tab"] {  
+        background: #123326;  
+        border: 1px solid rgba(255,255,255,0.08);  
         border-radius: 999px !important;  
         padding: 8px 20px;  
-        color: {C_TEXT_MUTED};  
+        color: #93b3a1;  
         font-weight: 700;  
-    }}  
-    .stTabs [aria-selected="true"] {{  
-        background: linear-gradient(135deg, {C_GREEN} 0%, {C_GREEN_DARK} 100%) !important;  
+    }  
+    .stTabs [aria-selected="true"] {  
+        background: linear-gradient(135deg, #4c9a6a 0%, #2f6b48 100%) !important;  
         color: white !important;  
-        border: 1px solid {C_GREEN} !important;  
-    }}  
+        border: 1px solid #4c9a6a !important;  
+    }  
   
-    /* ─── البطاقات ─── */  
-    [data-testid="stExpander"] {{  
-        background: {C_BG_PANEL};  
-        border: 1px solid {C_BORDER} !important;  
+    [data-testid="stExpander"] {  
+        background: #123326;  
+        border: 1px solid rgba(255,255,255,0.08) !important;  
         border-radius: 14px !important;  
         margin-bottom: 10px;  
-    }}  
-    [data-testid="stVerticalBlockBorderWrapper"] {{ border-radius: 14px !important; }}  
+    }  
   
-    /* ─── الأزرار ─── */  
-    .stButton > button {{  
-        background: linear-gradient(135deg, {C_GREEN} 0%, {C_GREEN_DARK} 100%);  
+    .stButton > button {  
+        background: linear-gradient(135deg, #4c9a6a 0%, #2f6b48 100%);  
         color: white; border: none; border-radius: 10px; width: 100%;  
         font-weight: 700; padding: 10px 0;  
         transition: all 0.3s ease;  
-    }}  
-    .stButton > button:hover {{ filter: brightness(1.12); transform: translateY(-2px); }}  
-    .stButton > button:active {{ transform: translateY(0); }}  
-    .stButton > button[kind="primary"] {{ background: linear-gradient(135deg, {C_DANGER} 0%, #b8443a 100%); }}  
-    .stFormSubmitButton > button {{  
-        background: linear-gradient(135deg, {C_AMBER} 0%, {C_AMBER_DARK} 100%) !important;  
+    }  
+    .stButton > button:hover { filter: brightness(1.12); transform: translateY(-2px); }  
+    .stButton > button[kind="primary"] { background: linear-gradient(135deg, #e2665a 0%, #b8443a 100%); }  
+    .stFormSubmitButton > button {  
+        background: linear-gradient(135deg, #d3a15c 0%, #a97c3c 100%) !important;  
         color: #24170a !important; border: none; border-radius: 10px; font-weight: 800;  
         transition: all 0.3s ease;  
-    }}  
-    .stFormSubmitButton > button:hover {{ filter: brightness(1.12); transform: translateY(-2px); }}  
+    }  
+    .stFormSubmitButton > button:hover { filter: brightness(1.12); transform: translateY(-2px); }  
   
-    /* ─── الحقول ─── */  
-    .stTextInput input, .stNumberInput input, .stDateInput input, .stSelectbox div[data-baseweb="select"] > div {{  
-        background: {C_BG_DEEP} !important; border: 1px solid {C_BORDER} !important;  
-        border-radius: 10px !important; color: {C_TEXT} !important;  
-    }}  
+    .stTextInput input, .stNumberInput input, .stDateInput input, .stSelectbox div[data-baseweb="select"] > div {  
+        background: #0b1f16 !important; border: 1px solid rgba(255,255,255,0.08) !important;  
+        border-radius: 10px !important; color: #eef6f0 !important;  
+    }  
   
-    /* ─── شارات ─── */  
-    .ear-tag {{  
+    .ear-tag {  
         display: inline-flex; align-items: center; gap: 8px;  
-        background: linear-gradient(135deg, {C_AMBER} 0%, {C_AMBER_DARK} 100%);  
+        background: linear-gradient(135deg, #d3a15c 0%, #a97c3c 100%);  
         color: #24170a; font-weight: 800; font-size: 13px;  
         padding: 5px 14px 5px 10px; border-radius: 4px 14px 14px 4px; margin: 2px 4px 2px 0;  
-    }}  
-    .ear-tag::before {{  
+    }  
+    .ear-tag::before {  
         content: ''; width: 7px; height: 7px; border-radius: 50%;  
-        background: {C_BG_DEEP}; border: 2px solid rgba(0,0,0,0.2); flex-shrink: 0;  
-    }}  
-    .info-chip {{  
+        background: #0b1f16; border: 2px solid rgba(0,0,0,0.2); flex-shrink: 0;  
+    }  
+    .info-chip {  
         display: inline-flex; align-items: center; gap: 6px;  
-        background: rgba(255,255,255,0.05); border: 1px solid {C_BORDER};  
-        color: {C_TEXT}; padding: 4px 12px; border-radius: 999px; font-size: 13px; margin: 2px 4px 2px 0;  
-    }}  
+        background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);  
+        color: #eef6f0; padding: 4px 12px; border-radius: 999px; font-size: 13px; margin: 2px 4px 2px 0;  
+    }  
 
-    /* ─── التجاوب مع الجوال ─── */  
-    @media (max-width: 768px) {{  
-        .app-hero {{  
+    @media (max-width: 768px) {  
+        .app-hero {  
             flex-direction: column;  
             text-align: center;  
             padding: 16px;  
-        }}  
-        .app-hero-icon {{  
+        }  
+        .app-hero-icon {  
             width: 50px;  
             height: 50px;  
             font-size: 30px;  
-        }}  
-        .app-hero-title {{  
+        }  
+        .app-hero-title {  
             font-size: 20px;  
-        }}  
-        .stTabs [data-baseweb="tab"] {{  
+        }  
+        .stTabs [data-baseweb="tab"] {  
             padding: 6px 12px;  
             font-size: 12px;  
-        }}  
-        [data-testid="column"] {{  
+        }  
+        [data-testid="column"] {  
             min-width: 100%;  
-        }}  
-    }}  
+        }  
+    }  
 
-    /* ─── ألوان الجنس ─── */  
-    .gender-male {{ background: {C_BLUE} !important; }}  
-    .gender-female {{ background: {C_PINK} !important; }}  
+    .gender-male { background: #4a90d9 !important; }  
+    .gender-female { background: #e87a7a !important; }  
 </style>  
 """, unsafe_allow_html=True)
 
@@ -196,10 +186,9 @@ if st.session_state.success_msg:
     st.success(st.session_state.success_msg)
     st.session_state.success_msg = None
 
-# ─── دوال مساعدة محسّنة ──────────────────────────────────────────────────
+# ─── دوال مساعدة ──────────────────────────────────────────────────
 
 def safe_literal_eval(value, default=None):
-    """تحويل القيم النصية إلى قوائم بشكل آمن"""
     if default is None:
         default = []
     if value is None or value == "":
@@ -212,21 +201,11 @@ def safe_literal_eval(value, default=None):
     except (ValueError, SyntaxError, TypeError):
         return default
 
-def get_gender_color(gender):
-    """الحصول على لون مناسب حسب الجنس"""
-    if "ذكر" in gender:
-        return C_BLUE
-    elif "أنثى" in gender:
-        return C_PINK
-    return C_TEXT_MUTED
-
 def save_image_compressed(uploaded_file, max_size=(800, 800)):
-    """حفظ الصورة مع ضغطها"""
     if uploaded_file is not None:
         try:
             img = Image.open(uploaded_file)
             img.thumbnail(max_size, Image.Resampling.LANCZOS)
-            
             file_path = f"images/{uuid.uuid4()}.jpg"
             img.save(file_path, "JPEG", quality=85, optimize=True)
             logging.info(f"تم حفظ الصورة: {file_path}")
@@ -237,7 +216,6 @@ def save_image_compressed(uploaded_file, max_size=(800, 800)):
     return ""
 
 def safe_delete_image(path):
-    """حذف الصورة بشكل آمن"""
     if path and isinstance(path, str) and os.path.exists(path):
         try:
             os.remove(path)
@@ -246,7 +224,6 @@ def safe_delete_image(path):
             logging.error(f"خطأ في حذف الصورة: {e}")
 
 def load_data(file, columns):
-    """تحميل البيانات من ملف JSON"""
     if not os.path.exists(file):
         logging.info(f"ملف {file} غير موجود، سيتم إنشاؤه")
         return pd.DataFrame(columns=columns)
@@ -269,7 +246,6 @@ def load_data(file, columns):
         return pd.DataFrame(columns=columns)
 
 def save_data(df, file):
-    """حفظ البيانات في ملف JSON"""
     try:
         df.to_json(file, orient="records", force_ascii=False, indent=4)
         logging.info(f"تم حفظ {len(df)} سجل في {file}")
@@ -278,7 +254,6 @@ def save_data(df, file):
         raise
 
 def auto_backup():
-    """إنشاء نسخة احتياطية تلقائية كل يوم"""
     backup_dir = "backups"
     if not os.path.exists(backup_dir):
         os.makedirs(backup_dir)
@@ -300,25 +275,18 @@ def auto_backup():
             logging.error(f"خطأ في النسخ الاحتياطي: {e}")
 
 def validate_sheep_data(data):
-    """التحقق من صحة بيانات الخروف"""
     errors = []
-    
     if not data.get("القلادة"):
         errors.append("القلادة مطلوبة")
-    
     if data.get("الجنس") not in ["أنثى", "أنثى صغيرة", "ذكر", "ذكر صغير"]:
         errors.append("الجنس غير صحيح")
-    
     if data.get("العمر", 0) < 0:
         errors.append("العمر لا يمكن أن يكون سالباً")
-    
     if data.get("عدد الولادات", 0) < 0:
         errors.append("عدد الولادات لا يمكن أن يكون سالباً")
-    
     return errors
 
 def refresh_data():
-    """تحديث البيانات من الملفات"""
     with st.spinner("جاري تحديث البيانات..."):
         st.session_state.herd = load_data(DATA_FILE, REQUIRED_COLS)
         st.session_state.history = load_data(HISTORY_FILE, HISTORY_COLS)
@@ -326,7 +294,6 @@ def refresh_data():
     st.success("✅ تم تحديث البيانات!")
 
 def check_overdue_vaccinations():
-    """التحقق من الأغنام التي لم تتلقَّ تطعيمات"""
     overdue = []
     for idx, row in st.session_state.herd.iterrows():
         vaccines = safe_literal_eval(row.get("اللقاحات", "[]"))
@@ -335,14 +302,12 @@ def check_overdue_vaccinations():
     return overdue
 
 def get_collar_by_id(sheep_id):
-    """الحصول على القلادة من المعرف"""
     if not sheep_id:
         return ""
     row = st.session_state.herd[st.session_state.herd["ID"] == sheep_id]
     return row.iloc[0]["القلادة"] if not row.empty else "(محذوف)"
 
 def format_sheep_label(sheep_id):
-    """تنسيق عرض الخروف في القوائم"""
     row = st.session_state.herd[st.session_state.herd["ID"] == sheep_id]
     if row.empty:
         return sheep_id
@@ -350,13 +315,7 @@ def format_sheep_label(sheep_id):
     return f"{row['القلادة']} ({row['الجنس']})"
 
 def show_notification(message, type="info"):
-    """عرض إشعارات بأشكال مختلفة"""
-    icons = {
-        "success": "✅",
-        "error": "❌", 
-        "warning": "⚠️",
-        "info": "ℹ️"
-    }
+    icons = {"success": "✅", "error": "❌", "warning": "⚠️", "info": "ℹ️"}
     st.session_state.toast = f"{icons.get(type, '')} {message}"
 
 # ─── تعريف الثوابت ─────────────────────────────────────────────────────────
@@ -374,36 +333,30 @@ if "history" not in st.session_state:
 # ─── تنفيذ النسخ الاحتياطي التلقائي ──────────────────────────────────────
 auto_backup()
 
-# ─── شريط جانبي للأدوات المساعدة ──────────────────────────────────────────
+# ─── شريط جانبي ──────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("### 🛠️ أدوات سريعة")
-    
     if st.button("🔄 تحديث البيانات", use_container_width=True):
         refresh_data()
-    
     st.divider()
-    
-    # عرض التنبيهات
     overdue = check_overdue_vaccinations()
     if overdue:
         st.warning(f"⚠️ {len(overdue)} أغنام لم تتلقَّ تطعيمات")
         with st.expander("عرض الأغنام"):
             for name in overdue[:10]:
                 st.write(f"- {name}")
-    
     st.divider()
     st.caption(f"📅 آخر تحديث: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
 
 # ─── واجهة التطبيق ─────────────────────────────────────────────────────────
 tab1, tab2, tab3, tab4, tab5 = st.tabs(["🏠 القطيع", "💉 إجراء طبي", "📋 السجل", "➕ إدارة النظام", "📊 إحصائيات"])
 
-# ─── 1. القطيع المحسّن ───
+# ─── 1. القطيع ───
 with tab1:
     st.subheader("📊 إحصائيات القطيع")
     df = st.session_state.herd
     
     if not df.empty:
-        # إحصائيات سريعة
         col1, col2, col3, col4 = st.columns(4)
         col1.metric("🐑 العدد الكلي", len(df))
         col2.metric("♂️ ذكور", len(df[df["الجنس"].isin(["ذكر", "ذكر صغير"])]))
@@ -412,14 +365,12 @@ with tab1:
         
         st.divider()
         
-        # البحث والتصفية
         search_col, filter_col = st.columns([2, 1])
         with search_col:
             search_term = st.text_input("🔍 بحث بالقلادة أو المعرف", placeholder="اكتب للبحث...", key="search_sheep")
         with filter_col:
             gender_filter = st.selectbox("تصفية حسب الجنس", ["الكل", "ذكر", "أنثى", "صغار"], key="gender_filter")
         
-        # فلترة البيانات
         filtered_df = df.copy()
         if search_term:
             filtered_df = filtered_df[filtered_df["القلادة"].str.contains(search_term, case=False, na=False) | 
@@ -467,7 +418,12 @@ with tab2:
         selected_ids = st.multiselect("اختر الأغنام المستهدفة:", herd_ids, format_func=format_sheep_label)
         action_type = st.radio("نوع الإجراء:", ["تطعيم", "جرعة طفيلية", "تغطيس"], horizontal=True)
         
-        opts = ['إيفومك', 'معوي/دموي', 'طاعون', 'جدري'] if action_type == "تطعيم" else (['جرعة كبدية', 'جرعة معوية'] if action_type == "جرعة طفيلية" else ['تغطيس شامل'])
+        if action_type == "تطعيم":
+            opts = ['إيفومك', 'معوي/دموي', 'طاعون', 'جدري']
+        elif action_type == "جرعة طفيلية":
+            opts = ['جرعة كبدية', 'جرعة معوية']
+        else:
+            opts = ['تغطيس شامل']
         treatment = st.selectbox("العلاج:", opts)
         date = str(st.date_input("التاريخ:"))
         img_file = st.file_uploader("صورة التوثيق (اختياري)", type=['jpg', 'png'])
@@ -493,7 +449,7 @@ with tab2:
     else:
         st.warning("يجب إضافة أغنام أولاً.")
 
-# ─── 3. السجل الطبي المحسّن (تم إصلاح الخطأ) ───
+# ─── 3. السجل الطبي (تم إصلاح الخطأ) ───
 with tab3:
     st.subheader("📋 السجل الطبي")
     
@@ -501,9 +457,33 @@ with tab3:
     
     with hist_tab1:
         if not st.session_state.history.empty:
-            # إضافة بحث في السجلات
             search_hist = st.text_input("🔍 بحث في السجلات", placeholder="ابحث بالإجراء أو العلاج...")
             hist_df = st.session_state.history.copy()
             if search_hist:
-                hist_df = hist_df[hist_df["الإجراء"].str.contains(search_hist, case=False, na=False) |
-                                  hist_df["العلاج"].str.c
+                # تم إصلاح الخطأ هنا - استخدام الأسماء الصحيحة للأعمدة
+                hist_df = hist_df[
+                    hist_df["الإجراء"].str.contains(search_hist, case=False, na=False) | 
+                    hist_df["العلاج"].str.contains(search_hist, case=False, na=False)
+                ]
+            
+            if hist_df.empty:
+                st.info("لا توجد سجلات تطابق البحث")
+            else:
+                for idx, row in hist_df.iterrows():
+                    with st.expander(f"🗓️ {row['التاريخ']} | {row['الإجراء']} ({row['العلاج']})"):
+                        st.write(f"**الأغنام المعالجة:** {row['الأغنام']}")
+                        if row.get('صورة') and os.path.exists(row['صورة']):
+                            st.image(row['صورة'], width=200)
+                        
+                        if st.button(f"🗑️ حذف السجل", key=f"del_hist_{idx}", type="primary"):
+                            with st.spinner("جاري حذف السجل..."):
+                                safe_delete_image(row.get('صورة'))
+                                st.session_state.history = st.session_state.history.drop(idx).reset_index(drop=True)
+                                save_data(st.session_state.history, HISTORY_FILE)
+                                show_notification("تم حذف السجل الطبي بنجاح!", "success")
+                                time.sleep(0.5)
+                                st.rerun()
+        else:
+            st.info("لا توجد سجلات طبية حتى الآن.")
+            
+    with hist_tab
