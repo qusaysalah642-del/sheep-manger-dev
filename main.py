@@ -493,7 +493,7 @@ with tab2:
     else:
         st.warning("يجب إضافة أغنام أولاً.")
 
-# ─── 3. السجل الطبي المحسّن ───
+# ─── 3. السجل الطبي المحسّن (تم إصلاح الخطأ) ───
 with tab3:
     st.subheader("📋 السجل الطبي")
     
@@ -506,4 +506,4 @@ with tab3:
             hist_df = st.session_state.history.copy()
             if search_hist:
                 hist_df = hist_df[hist_df["الإجراء"].str.contains(search_hist, case=False, na=False) |
-                                  hist_df["العلاج"].str.contains(search_hi
+                                  hist_df["العلاج"].str.c
