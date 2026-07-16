@@ -358,7 +358,7 @@ TREATMENT_OPTS = {
 # ─── الأقسام الرئيسية ──────────────────────────────────────────────
 tab1, tab2, tab3, tab4 = st.tabs(["🏠 القطيع", "💉 إجراء طبي", "📋 السجل", "➕ إدارة النظام"])
 
-# ─── 1. القطيع (مع بطاقات إحصائيات أفقية) ───
+# ─── 1. القطيع (مع بطاقات إحصائيات أفقية وترقيم الأبناء) ───
 with tab1:
     st.subheader("📊 إحصائيات القطيع")
     df = st.session_state.herd
@@ -418,6 +418,20 @@ with tab1:
                             st.write(f"**الأم:** {get_collar_by_id(row['الأم'])}")
                         if row.get('ملاحظات'):
                             st.write(f"**📝 ملاحظات:** {row['ملاحظات']}")
+                        
+                        # ─── عرض الأبناء مع ترقيم ───
+                        if row.get('الأبناء'):
+                            kids = safe_literal_eval(row['الأبناء'])
+                            if kids:
+                                kids_names = []
+                                for i, kid_id in enumerate(kids, 1):
+                                    name = get_collar_by_id(kid_id)
+                                    if name and name != "(محذوف)":
+                                        kids_names.append(f"{i}. {name}")
+                                if kids_names:
+                                    st.write(f"**الأبناء:** {', '.join(kids_names)}")
+                                else:
+                                    st.write("**الأبناء:** لا يوجد")
     else:
         st.info("القطيع فارغ.")
         # ─── 2. إجراء طبي ───
