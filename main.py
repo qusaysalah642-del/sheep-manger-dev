@@ -306,31 +306,39 @@ with tab3:
                     st.markdown('<div class="edit-mode">', unsafe_allow_html=True)
                     st.markdown("#### ✏️ تعديل السجل")
                     
+                    # استخراج القيم الحالية
+                    try:
+                        curr_date = datetime.strptime(str(row["التاريخ"]), "%Y-%m-%d").date()
+                    except:
+                        curr_date = date.today()
+                    
+                    curr_action = row.get("الإجراء", "تطعيم")
+                    curr_treatment = row.get("العلاج", "")
+                    
+                    # مفتاح فريد للـ radio
+                    radio_key = f"action_radio_{row['ID']}"
+                    
+                    # الـ radio خارج الـ form (للتحديث المباشر)
+                    new_action = st.radio(
+                        "نوع الإجراء:",
+                        ["تطعيم", "جرعة طفيلية", "تغطيس"],
+                        index=["تطعيم", "جرعة طفيلية", "تغطيس"].index(curr_action),
+                        horizontal=True,
+                        key=radio_key
+                    )
+                    
+                    # الحصول على خيارات العلاج المناسبة بناءً على الـ radio الحالي
+                    available_treatments = TREATMENT_OPTS.get(new_action, [])
+                    
+                    # تعيين الفهرس المناسب للعلاج الحالي
+                    if curr_treatment in available_treatments:
+                        t_idx = available_treatments.index(curr_treatment)
+                    else:
+                        t_idx = 0
+                    
+                    # بداية الـ form
                     with st.form(key=f"edit_form_{row['ID']}"):
-                        try:
-                            curr_date = datetime.strptime(str(row["التاريخ"]), "%Y-%m-%d").date()
-                        except:
-                            curr_date = date.today()
                         new_date = st.date_input("التاريخ:", value=curr_date)
-
-                        action_opts = ["تطعيم", "جرعة طفيلية", "تغطيس"]
-                        curr_action = row.get("الإجراء", "تطعيم")
-                        a_idx = action_opts.index(curr_action) if curr_action in action_opts else 0
-                        new_action = st.radio(
-                            "نوع الإجراء:",
-                            action_opts,
-                            index=a_idx,
-                            horizontal=True,
-                            key=f"action_radio_{row['ID']}"
-                        )
-
-                        # العلاج يعتمد على نوع الإجراء المختار
-                        available_treatments = TREATMENT_OPTS.get(new_action, [])
-                        curr_treatment = row.get("العلاج", "")
-                        if curr_treatment in available_treatments:
-                            t_idx = available_treatments.index(curr_treatment)
-                        else:
-                            t_idx = 0
                         
                         new_treatment = st.selectbox(
                             "العلاج:",
