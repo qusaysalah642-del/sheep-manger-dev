@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 st.set_page_config(page_title="Sheep Manager Pro", page_icon="🐑", layout="wide")
 
 # ─── تهيئة Session State ──────────────────────────────────────────────
-for key in ["success_msg", "toast", "editing_hist_id", "splash_shown"]:
+for key in ["success_msg", "toast", "editing_hist_id", "splash_shown", "selected_sheep"]:
     if key not in st.session_state:
         st.session_state[key] = None
 
@@ -95,12 +95,28 @@ def save_image_compressed(uploaded_file, max_size=(800, 800)):
             return ""
     return ""
 
+def save_multiple_images(uploaded_files, max_size=(800, 800)):
+    """حفظ عدة صور وإرجاع قائمة بالمسارات"""
+    paths = []
+    if uploaded_files:
+        for file in uploaded_files:
+            path = save_image_compressed(file, max_size)
+            if path:
+                paths.append(path)
+    return paths
+
 def safe_delete_image(path):
     if path and os.path.exists(path):
         try:
             os.remove(path)
         except OSError:
             pass
+
+def safe_delete_images(paths):
+    """حذف عدة صور"""
+    if paths:
+        for path in paths:
+            safe_delete_image(path)
 
 def load_data(file, columns):
     if not os.path.exists(file):
@@ -111,7 +127,7 @@ def load_data(file, columns):
             df = pd.DataFrame(data)
             for col in columns:
                 if col not in df.columns:
-                    if col in ["الأبناء", "اللقاحات", "الجرعات"]:
+                    if col in ["الأبناء", "اللقاحات", "الجرعات", "الصور"]:
                         df[col] = "[]"
                     elif col == "تاريخ الميلاد":
                         df[col] = ""
@@ -177,7 +193,7 @@ def show_notification(message, type="info"):
 # ─── تحميل البيانات ──────────────────────────────────────────────────
 DATA_FILE = "data/herd_data.json"
 HISTORY_FILE = "data/medical_history.json"
-REQUIRED_COLS = ["ID", "القلادة", "الجنس", "تاريخ الميلاد", "عدد الولادات", "صورة", "اللقاحات", "الجرعات", "آخر تغطيس", "الأم", "الأبناء", "ملاحظات"]
+REQUIRED_COLS = ["ID", "القلادة", "الجنس", "تاريخ الميلاد", "عدد الولادات", "الصور", "اللقاحات", "الجرعات", "آخر تغطيس", "الأم", "الأبناء", "ملاحظات"]
 HISTORY_COLS = ["ID", "التاريخ", "الإجراء", "العلاج", "الأغنام", "صورة"]
 
 if "herd" not in st.session_state:
@@ -186,7 +202,7 @@ if "history" not in st.session_state:
     st.session_state.history = load_data(HISTORY_FILE, HISTORY_COLS)
 
 auto_backup()
-# ─── CSS مع أنيميشن وتحسين البطاقات ─────────────────────────────────
+# ─── CSS ──────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
     body { direction: rtl; }
@@ -257,6 +273,7 @@ st.markdown("""
     .stImage img {
         transition: all 0.5s ease;
         border-radius: 10px;
+        margin: 5px;
     }
     .stImage img:hover {
         transform: scale(1.05);
@@ -318,6 +335,49 @@ st.markdown("""
     .stat-card.blue .stat-number { color: #4a90d9; }
     .stat-card.pink .stat-number { color: #e87a7a; }
     .stat-card.gold .stat-number { color: #d3a15c; }
+    
+    /* عرض الصور في شبكة */
+    .images-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 10px 0;
+    }
+    .image-item {
+        position: relative;
+        display: inline-block;
+    }
+    .image-item img {
+        width: 120px;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 10px;
+        border: 2px solid rgba(255,255,255,0.1);
+        transition: all 0.3s ease;
+    }
+    .image-item img:hover {
+        border-color: #4c9a6a;
+        transform: scale(1.05);
+    }
+    .delete-img-btn {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: #e2665a;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    .delete-img-btn:hover {
+        transform: scale(1.2);
+        background: #d44a3a;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -398,12 +458,13 @@ with tab1:
             for _, row in filtered_df.iterrows():
                 birth = row.get("تاريخ الميلاد", "")
                 age_str, _ = calculate_age(birth)
+                images = safe_literal_eval(row.get("الصور", "[]"))
 
                 with st.expander(f"🏷️ {row['القلادة']} - {row['الجنس']}"):
                     col_img, col_info = st.columns([1, 2])
                     with col_img:
-                        if row.get('صورة') and os.path.exists(row['صورة']):
-                            st.image(row['صورة'], width=150)
+                        if images:
+                            st.image(images[0], width=150)
                     with col_info:
                         st.write(f"**العمر:** {age_str}")
                         st.write(f"**عدد الولادات:** {row.get('عدد الولادات', 0)}")
@@ -426,6 +487,14 @@ with tab1:
                                         st.write(f"  • {kid}")
                                 else:
                                     st.write("**الأبناء:** لا يوجد")
+                        
+                        # عرض الصور المتعددة
+                        if len(images) > 1:
+                            st.write("**📸 صور إضافية:**")
+                            cols = st.columns(min(len(images), 4))
+                            for i, img_path in enumerate(images[1:]):
+                                if os.path.exists(img_path):
+                                    cols[i % 4].image(img_path, width=100)
     else:
         st.info("القطيع فارغ.")
         # ─── 2. إجراء طبي ───
@@ -563,7 +632,9 @@ with tab3:
         st.info("لا توجد سجلات.")
         # ─── 4. إدارة النظام ───
 with tab4:
-    m1, m2, m3 = st.tabs(["➕ إضافة", "✏️ تعديل", "💾 نسخ احتياطي"])
+    m1, m2, m3 = st.tabs(["➕ إضافة", "✏️ تعديل / صور", "💾 نسخ احتياطي"])
+    
+    # ─── تبويب الإضافة ───
     with m1:
         with st.form("add"):
             c1, c2 = st.columns(2)
@@ -574,7 +645,9 @@ with tab4:
             mother = st.selectbox("الأم", [None] + st.session_state.herd["ID"].tolist(),
                                   format_func=lambda x: "بدون" if x is None else format_sheep_label(x))
             notes = st.text_area("ملاحظات", placeholder="أي ملاحظات إضافية...")
-            img = st.file_uploader("صورة", type=['jpg','png'])
+            # دعم رفع عدة صور
+            images = st.file_uploader("صور (اختياري - يمكنك اختيار عدة صور)", type=['jpg','png'], accept_multiple_files=True)
+            
             if st.form_submit_button("➕ إضافة"):
                 if collar:
                     birth_str = birth_date.strftime("%Y-%m-%d") if birth_date else ""
@@ -585,6 +658,9 @@ with tab4:
                             st.error(f"❌ {e}")
                     else:
                         new_id = str(uuid.uuid4())
+                        # حفظ الصور المتعددة
+                        saved_images = save_multiple_images(images)
+                        
                         new_row = pd.DataFrame([{
                             "ID": new_id,
                             "القلادة": collar,
@@ -594,7 +670,7 @@ with tab4:
                             "الأم": mother or "",
                             "الأبناء": "[]",
                             "ملاحظات": notes,
-                            "صورة": save_image_compressed(img),
+                            "الصور": str(saved_images),
                             "اللقاحات": "[]",
                             "الجرعات": "[]",
                             "آخر تغطيس": ""
@@ -611,13 +687,61 @@ with tab4:
                 else:
                     st.error("القلادة مطلوبة")
 
+    # ─── تبويب التعديل (مع إمكانية حذف الصور) ───
     with m2:
         if not st.session_state.herd.empty:
-            target = st.selectbox("اختر رأساً:", st.session_state.herd["ID"].tolist(), format_func=format_sheep_label)
+            # استخدام session_state لتجنب إعادة التحميل عند تغيير الاختيار
+            sheep_ids = st.session_state.herd["ID"].tolist()
+            
+            # تحديد الخيار الحالي
+            current_selected = st.session_state.get("selected_sheep", sheep_ids[0] if sheep_ids else None)
+            if current_selected not in sheep_ids:
+                current_selected = sheep_ids[0] if sheep_ids else None
+            
+            # selectbox مع on_change
+            def on_sheep_change():
+                st.session_state.selected_sheep = st.session_state._sheep_select
+            
+            target = st.selectbox(
+                "اختر رأساً:",
+                sheep_ids,
+                index=sheep_ids.index(current_selected) if current_selected in sheep_ids else 0,
+                format_func=format_sheep_label,
+                key="_sheep_select",
+                on_change=on_sheep_change
+            )
+            
             if target:
                 idx = st.session_state.herd[st.session_state.herd["ID"] == target].index[0]
                 row = st.session_state.herd.iloc[idx]
+                images = safe_literal_eval(row.get("الصور", "[]"))
+                
+                # عرض الصور الحالية مع زر حذف لكل صورة
+                if images:
+                    st.write("**📸 الصور الحالية:**")
+                    col_imgs = st.columns(min(len(images), 4))
+                    
+                    # استخدام session_state لتتبع الصور المراد حذفها
+                    if "images_to_delete" not in st.session_state:
+                        st.session_state.images_to_delete = []
+                    
+                    for i, img_path in enumerate(images):
+                        if os.path.exists(img_path):
+                            with col_imgs[i % 4]:
+                                st.image(img_path, width=120)
+                                if st.button(f"🗑️ حذف", key=f"del_img_{i}_{target}"):
+                                    # حذف الصورة
+                                    safe_delete_image(img_path)
+                                    # إزالة من قائمة الصور
+                                    images.pop(i)
+                                    st.session_state.herd.at[idx, "الصور"] = str(images)
+                                    save_data(st.session_state.herd, DATA_FILE)
+                                    show_notification("تم حذف الصورة!", "success")
+                                    st.rerun()
+                
                 with st.form("edit"):
+                    st.markdown("### ✏️ تعديل بيانات الرأس")
+                    
                     new_collar = st.text_input("القلادة*", value=row["القلادة"])
                     new_gender = st.selectbox("الجنس*", ["أنثى","أنثى صغيرة","ذكر","ذكر صغير"],
                                               index=["أنثى","أنثى صغيرة","ذكر","ذكر صغير"].index(row["الجنس"]))
@@ -635,22 +759,35 @@ with tab4:
                                               index=([None] + st.session_state.herd["ID"].tolist()).index(row.get("الأم")) if row.get("الأم") in [None] + st.session_state.herd["ID"].tolist() else 0,
                                               format_func=lambda x: "بدون" if x is None else format_sheep_label(x))
                     new_notes = st.text_area("ملاحظات", value=row.get("ملاحظات", ""))
-                    new_img = st.file_uploader("تحديث الصورة", type=['jpg','png'])
-                    if st.form_submit_button("💾 حفظ"):
+                    
+                    # إضافة صور جديدة (عدة صور)
+                    new_images = st.file_uploader("إضافة صور جديدة", type=['jpg','png'], accept_multiple_files=True)
+                    
+                    if st.form_submit_button("💾 حفظ التعديلات"):
+                        # حفظ البيانات الأساسية
                         st.session_state.herd.at[idx, "القلادة"] = new_collar
                         st.session_state.herd.at[idx, "الجنس"] = new_gender
                         st.session_state.herd.at[idx, "تاريخ الميلاد"] = new_birth.strftime("%Y-%m-%d") if new_birth else ""
                         st.session_state.herd.at[idx, "عدد الولادات"] = new_births
                         st.session_state.herd.at[idx, "الأم"] = new_mother or ""
                         st.session_state.herd.at[idx, "ملاحظات"] = new_notes
-                        if new_img:
-                            safe_delete_image(row.get("صورة"))
-                            st.session_state.herd.at[idx, "صورة"] = save_image_compressed(new_img)
+                        
+                        # إضافة الصور الجديدة
+                        if new_images:
+                            current_images = safe_literal_eval(st.session_state.herd.at[idx, "الصور"])
+                            new_saved = save_multiple_images(new_images)
+                            current_images.extend(new_saved)
+                            st.session_state.herd.at[idx, "الصور"] = str(current_images)
+                        
                         save_data(st.session_state.herd, DATA_FILE)
                         show_notification("تم التحديث!", "success")
                         st.rerun()
-                if st.button("🗑️ حذف نهائي", type="primary"):
-                    safe_delete_image(row.get("صورة"))
+                
+                # زر حذف الرأس
+                if st.button("🗑️ حذف الرأس نهائياً", type="primary"):
+                    # حذف جميع الصور المرتبطة
+                    for img in images:
+                        safe_delete_image(img)
                     st.session_state.herd = st.session_state.herd.drop(idx).reset_index(drop=True)
                     save_data(st.session_state.herd, DATA_FILE)
                     show_notification("تم الحذف!", "success")
@@ -658,6 +795,7 @@ with tab4:
         else:
             st.info("القطيع فارغ")
 
+    # ─── تبويب النسخ الاحتياطي ───
     with m3:
         st.download_button("📥 تحميل نسخة احتياطية",
                            data=json.dumps({"herd": st.session_state.herd.to_dict(orient="records"),
