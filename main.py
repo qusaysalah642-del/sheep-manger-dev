@@ -81,8 +81,7 @@ def save_image_compressed(uploaded_file, max_size=(800, 800)):
             path = f"images/{uuid.uuid4()}.jpg"
             img.save(path, "JPEG", quality=85, optimize=True)
             return path
-        except Exception as e:
-            logging.error(f"خطأ في حفظ الصورة: {e}")
+        except Exception:
             return ""
     return ""
 
@@ -175,8 +174,7 @@ if "history" not in st.session_state:
     st.session_state.history = load_data(HISTORY_FILE, HISTORY_COLS)
 
 auto_backup()
-
-# ─── CSS مبسط ──────────────────────────────────────────────────────
+# ─── CSS ──────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
     body { direction: rtl; }
@@ -284,16 +282,13 @@ with tab2:
                 st.warning("اختر رأساً واحداً على الأقل.")
     else:
         st.warning("أضف أغناماً أولاً.")
-
-# ─── 3. السجل الطبي (مع تعديل مباشر) ───
+        # ─── 3. السجل الطبي (مع تعديل مباشر) ───
 with tab3:
     st.subheader("📋 السجل الطبي")
     if not st.session_state.history.empty:
-        # جلب معرف السجل الجاري تعديله من session_state
         editing_id = st.session_state.get("editing_hist_id", None)
 
         for idx, row in st.session_state.history.iterrows():
-            # تحديد ما إذا كان هذا السجل في وضع التعديل
             is_editing = (editing_id == row["ID"])
 
             with st.expander(f"🗓️ {row['التاريخ']} - {row['الإجراء']} ({row['العلاج']})", expanded=is_editing):
@@ -302,26 +297,22 @@ with tab3:
                     st.markdown('<div class="edit-mode">', unsafe_allow_html=True)
                     st.markdown("#### ✏️ تعديل السجل")
                     with st.form(key=f"edit_form_{row['ID']}"):
-                        # التاريخ
                         try:
                             curr_date = datetime.strptime(str(row["التاريخ"]), "%Y-%m-%d").date()
                         except:
                             curr_date = date.today()
                         new_date = st.date_input("التاريخ:", value=curr_date)
 
-                        # نوع الإجراء
                         action_opts = ["تطعيم", "جرعة طفيلية", "تغطيس"]
                         curr_action = row.get("الإجراء", "تطعيم")
                         a_idx = action_opts.index(curr_action) if curr_action in action_opts else 0
                         new_action = st.radio("نوع الإجراء:", action_opts, index=a_idx, horizontal=True)
 
-                        # العلاج
                         all_opts = ['إيفومك', 'معوي/دموي', 'طاعون', 'جدري', 'جرعة كبدية', 'جرعة معوية', 'تغطيس شامل']
                         curr_treatment = row.get("العلاج", "")
                         t_idx = all_opts.index(curr_treatment) if curr_treatment in all_opts else 0
                         new_treatment = st.selectbox("العلاج:", all_opts, index=t_idx)
 
-                        # الأغنام (multiselect)
                         herd_ids = st.session_state.herd["ID"].tolist()
                         saved_collars = [c.strip() for c in str(row['الأغنام']).split(",")]
                         default_ids = []
@@ -336,14 +327,12 @@ with tab3:
                             format_func=format_sheep_label
                         )
 
-                        # الصورة
                         new_img = st.file_uploader("تحديث الصورة (اتركه فارغاً للاحتفاظ بالصورة الحالية)", type=['jpg','png'])
 
                         col_btn1, col_btn2 = st.columns(2)
                         with col_btn1:
                             if st.form_submit_button("💾 حفظ التعديلات"):
                                 if new_selected:
-                                    # تحديث البيانات
                                     st.session_state.history.at[idx, "التاريخ"] = str(new_date)
                                     st.session_state.history.at[idx, "الإجراء"] = new_action
                                     st.session_state.history.at[idx, "العلاج"] = new_treatment
@@ -352,7 +341,7 @@ with tab3:
                                         safe_delete_image(row.get("صورة"))
                                         st.session_state.history.at[idx, "صورة"] = save_image_compressed(new_img)
                                     save_data(st.session_state.history, HISTORY_FILE)
-                                    st.session_state.editing_hist_id = None  # إلغاء وضع التعديل
+                                    st.session_state.editing_hist_id = None
                                     show_notification("تم تحديث السجل!", "success")
                                     time.sleep(0.5)
                                     st.rerun()
@@ -383,8 +372,7 @@ with tab3:
                             st.rerun()
     else:
         st.info("لا توجد سجلات.")
-
-# ─── 4. إدارة النظام ───
+        # ─── 4. إدارة النظام ───
 with tab4:
     m1, m2, m3 = st.tabs(["➕ إضافة", "✏️ تعديل", "💾 نسخ احتياطي"])
     with m1:
@@ -392,7 +380,7 @@ with tab4:
             c1, c2 = st.columns(2)
             collar = c1.text_input("القلادة*")
             gender = c2.selectbox("الجنس*", ["أنثى", "أنثى صغيرة", "ذكر", "ذكر صغير"])
-            birth_date = st.date_input("تاريخ الميلاد", value=None, help="اختر تاريخ الميلاد، سيتم حساب العمر تلقائياً")
+            birth_date = st.date_input("تاريخ الميلاد", value=None)
             births = st.number_input("عدد الولادات", min_value=0)
             mother = st.selectbox("الأم", [None] + st.session_state.herd["ID"].tolist(),
                                   format_func=lambda x: "بدون" if x is None else format_sheep_label(x))
@@ -441,4 +429,58 @@ with tab4:
                 with st.form("edit"):
                     new_collar = st.text_input("القلادة*", value=row["القلادة"])
                     new_gender = st.selectbox("الجنس*", ["أنثى","أنثى صغيرة","ذكر","ذكر صغير"],
-                                              index=["أنثى","أنثى صغيرة","ذكر","ذكر صغير"].index(ro
+                                              index=["أنثى","أنثى صغيرة","ذكر","ذكر صغير"].index(row["الجنس"]))
+                    current_birth = row.get("تاريخ الميلاد", "")
+                    if current_birth:
+                        try:
+                            default_date = datetime.strptime(current_birth, "%Y-%m-%d").date()
+                        except:
+                            default_date = None
+                    else:
+                        default_date = None
+                    new_birth = st.date_input("تاريخ الميلاد", value=default_date)
+                    new_births = st.number_input("عدد الولادات", min_value=0, value=int(row["عدد الولادات"]))
+                    new_mother = st.selectbox("الأم", [None] + st.session_state.herd["ID"].tolist(),
+                                              index=([None] + st.session_state.herd["ID"].tolist()).index(row.get("الأم")) if row.get("الأم") in [None] + st.session_state.herd["ID"].tolist() else 0,
+                                              format_func=lambda x: "بدون" if x is None else format_sheep_label(x))
+                    new_img = st.file_uploader("تحديث الصورة", type=['jpg','png'])
+                    if st.form_submit_button("💾 حفظ"):
+                        st.session_state.herd.at[idx, "القلادة"] = new_collar
+                        st.session_state.herd.at[idx, "الجنس"] = new_gender
+                        st.session_state.herd.at[idx, "تاريخ الميلاد"] = new_birth.strftime("%Y-%m-%d") if new_birth else ""
+                        st.session_state.herd.at[idx, "عدد الولادات"] = new_births
+                        st.session_state.herd.at[idx, "الأم"] = new_mother or ""
+                        if new_img:
+                            safe_delete_image(row.get("صورة"))
+                            st.session_state.herd.at[idx, "صورة"] = save_image_compressed(new_img)
+                        save_data(st.session_state.herd, DATA_FILE)
+                        show_notification("تم التحديث!", "success")
+                        st.rerun()
+                if st.button("🗑️ حذف نهائي", type="primary"):
+                    safe_delete_image(row.get("صورة"))
+                    st.session_state.herd = st.session_state.herd.drop(idx).reset_index(drop=True)
+                    save_data(st.session_state.herd, DATA_FILE)
+                    show_notification("تم الحذف!", "success")
+                    st.rerun()
+        else:
+            st.info("القطيع فارغ")
+
+    with m3:
+        st.download_button("📥 تحميل نسخة احتياطية",
+                           data=json.dumps({"herd": st.session_state.herd.to_dict(orient="records"),
+                                            "history": st.session_state.history.to_dict(orient="records")},
+                                            ensure_ascii=False, indent=2),
+                           file_name=f"backup_{datetime.now().strftime('%Y-%m-%d')}.json",
+                           mime="application/json")
+        uploaded = st.file_uploader("استعادة", type=['json'])
+        if uploaded and st.button("🔄 تأكيد الاستعادة", type="primary"):
+            try:
+                data = json.load(uploaded)
+                st.session_state.herd = pd.DataFrame(data.get("herd", []))
+                st.session_state.history = pd.DataFrame(data.get("history", []))
+                save_data(st.session_state.herd, DATA_FILE)
+                save_data(st.session_state.history, HISTORY_FILE)
+                show_notification("تمت الاستعادة!", "success")
+                st.rerun()
+            except Exception as e:
+                st.error(f"خطأ: {e}")
