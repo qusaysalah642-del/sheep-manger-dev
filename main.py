@@ -11,7 +11,7 @@ for pkg in required:
     except ImportError:
         subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
 
-# ─── الآن الاستيراد ──────────────────────────────────────────────────────
+# ─── الاستيرادات ──────────────────────────────────────────────────────
 import streamlit as st
 import pandas as pd
 import json
@@ -19,7 +19,7 @@ import uuid
 import ast
 import time
 import logging
-from datetime import datetime
+from datetime import datetime, date
 from PIL import Image
 
 # ─── إعداد التسجيل ──────────────────────────────────────────────────────
@@ -42,6 +42,7 @@ for folder in ["images", "backups", "data"]:
     os.makedirs(folder, exist_ok=True)
 
 # ─── دوال مساعدة ──────────────────────────────────────────────────────
+
 def safe_literal_eval(value, default=None):
     if default is None:
         default = []
@@ -54,6 +55,25 @@ def safe_literal_eval(value, default=None):
         return result if isinstance(result, list) else default
     except (ValueError, SyntaxError, TypeError):
         return default
+
+def calculate_age(birth_date_str):
+    """حساب العمر بالشهور والسنوات من تاريخ الميلاد"""
+    if not birth_date_str:
+        return None, None
+    try:
+        birth = datetime.strptime(birth_date_str, "%Y-%m-%d").date()
+        today = date.today()
+        # حساب عدد الأيام ثم تحويلها إلى شهور وسنوات
+        delta = today - birth
+        total_months = delta.days // 30  # تقريباً
+        years = total_months // 12
+        months = total_months % 12
+        if years > 0:
+            return f"{years} سنة و {months} شهر", f"{years} سنة"
+        else:
+            return f"{months} شهر", f"{months} شهر"
+    except Exception:
+        return None, None
 
 def save_image_compressed(uploaded_file, max_size=(800, 800)):
     if uploaded_file is not None:
@@ -86,8 +106,8 @@ def load_data(file, columns):
                 if col not in df.columns:
                     if col in ["الأبناء", "اللقاحات", "الجرعات"]:
                         df[col] = "[]"
-                    elif col == "وحدة":
-                        df[col] = "شهر"
+                    elif col == "تاريخ الميلاد":
+                        df[col] = ""
                     else:
                         df[col] = ""
             return df
@@ -118,10 +138,15 @@ def validate_sheep_data(data):
         errors.append("القلادة مطلوبة")
     if data.get("الجنس") not in ["أنثى", "أنثى صغيرة", "ذكر", "ذكر صغير"]:
         errors.append("الجنس غير صحيح")
-    if data.get("العمر", 0) < 0:
-        errors.append("العمر لا يمكن أن يكون سالباً")
     if data.get("عدد الولادات", 0) < 0:
         errors.append("عدد الولادات لا يمكن أن يكون سالباً")
+    # تاريخ الميلاد اختياري، لكن إن وجد يجب أن يكون صحيحاً
+    birth = data.get("تاريخ الميلاد")
+    if birth:
+        try:
+            datetime.strptime(birth, "%Y-%m-%d")
+        except ValueError:
+            errors.append("صيغة تاريخ الميلاد غير صحيحة (YYYY-MM-DD)")
     return errors
 
 def get_collar_by_id(sheep_id):
@@ -144,7 +169,7 @@ def show_notification(message, type="info"):
 # ─── تحميل البيانات ──────────────────────────────────────────────────
 DATA_FILE = "data/herd_data.json"
 HISTORY_FILE = "data/medical_history.json"
-REQUIRED_COLS = ["ID", "القلادة", "الجنس", "العمر", "وحدة", "عدد الولادات", "صورة", "اللقاحات", "الجرعات", "آخر تغطيس", "الأم", "الأبناء"]
+REQUIRED_COLS = ["ID", "القلادة", "الجنس", "تاريخ الميلاد", "عدد الولادات", "صورة", "اللقاحات", "الجرعات", "آخر تغطيس", "الأم", "الأبناء"]
 HISTORY_COLS = ["ID", "التاريخ", "الإجراء", "العلاج", "الأغنام", "صورة"]
 
 if "herd" not in st.session_state:
@@ -189,11 +214,17 @@ with tab1:
     st.subheader("📊 إحصائيات القطيع")
     df = st.session_state.herd
     if not df.empty:
+        # حساب الإحصائيات حسب الجنس
+        total = len(df)
+        males = len(df[df["الجنس"].isin(["ذكر", "ذكر صغير"])])
+        females = len(df[df["الجنس"].isin(["أنثى", "أنثى صغيرة"])])
+        young = len(df[df["الجنس"].str.contains("صغير", na=False)])
+
         col1, col2, col3, col4 = st.columns(4)
-        col1.metric("🐑 العدد الكلي", len(df))
-        col2.metric("♂️ ذكور", len(df[df["الجنس"].isin(["ذكر", "ذكر صغير"])]))
-        col3.metric("♀️ إناث", len(df[df["الجنس"].isin(["أنثى", "أنثى صغيرة"])]))
-        col4.metric("👶 صغار", len(df[df["الجنس"].str.contains("صغير", na=False)]))
+        col1.metric("🐑 العدد الكلي", total)
+        col2.metric("♂️ ذكور", males)
+        col3.metric("♀️ إناث", females)
+        col4.metric("👶 صغار", young)
 
         search_term = st.text_input("🔍 بحث", placeholder="ابحث بالقلادة...")
         filtered_df = df.copy()
@@ -201,13 +232,28 @@ with tab1:
             filtered_df = filtered_df[filtered_df["القلادة"].str.contains(search_term, case=False, na=False)]
 
         for _, row in filtered_df.iterrows():
+            birth = row.get("تاريخ الميلاد", "")
+            age_str, age_unit = calculate_age(birth)
+            if age_str is None:
+                age_display = "غير محدد"
+            else:
+                age_display = age_str
+
             with st.expander(f"🏷️ {row['القلادة']} - {row['الجنس']}"):
-                if row.get('صورة') and os.path.exists(row['صورة']):
-                    st.image(row['صورة'], width=150)
-                st.write(f"**العمر:** {row['العمر']} {row.get('وحدة', 'شهر')}")
-                st.write(f"**عدد الولادات:** {row.get('عدد الولادات', 0)}")
-                if row.get('الأم'):
-                    st.write(f"**الأم:** {get_collar_by_id(row['الأم'])}")
+                col_img, col_info = st.columns([1, 2])
+                with col_img:
+                    if row.get('صورة') and os.path.exists(row['صورة']):
+                        st.image(row['صورة'], width=150)
+                with col_info:
+                    st.write(f"**العمر:** {age_display}")
+                    st.write(f"**عدد الولادات:** {row.get('عدد الولادات', 0)}")
+                    if row.get('الأم'):
+                        st.write(f"**الأم:** {get_collar_by_id(row['الأم'])}")
+                    if row.get('الأبناء'):
+                        kids = safe_literal_eval(row['الأبناء'])
+                        if kids:
+                            kids_names = [get_collar_by_id(k) for k in kids if k]
+                            st.write(f"**الأبناء:** {', '.join(kids_names) if kids_names else 'لا يوجد'}")
     else:
         st.info("القطيع فارغ.")
 
@@ -271,30 +317,39 @@ with tab4:
             c1, c2 = st.columns(2)
             collar = c1.text_input("القلادة*")
             gender = c2.selectbox("الجنس*", ["أنثى", "أنثى صغيرة", "ذكر", "ذكر صغير"])
-            age = st.number_input("العمر", min_value=0)
-            unit = st.selectbox("الوحدة", ["شهر", "سنة"])
+            # استبدال العمر و الوحدة بتاريخ الميلاد
+            birth_date = st.date_input("تاريخ الميلاد", value=None, help="اختر تاريخ الميلاد، سيتم حساب العمر تلقائياً")
             births = st.number_input("عدد الولادات", min_value=0)
-            mother = st.selectbox("الأم", [None]+st.session_state.herd["ID"].tolist(),
+            mother = st.selectbox("الأم", [None] + st.session_state.herd["ID"].tolist(),
                                   format_func=lambda x: "بدون" if x is None else format_sheep_label(x))
             img = st.file_uploader("صورة", type=['jpg','png'])
             if st.form_submit_button("➕ إضافة"):
                 if collar:
-                    data = {"القلادة":collar, "الجنس":gender, "العمر":age, "عدد الولادات":births}
+                    # تحويل التاريخ إلى نص
+                    birth_str = birth_date.strftime("%Y-%m-%d") if birth_date else ""
+                    data = {"القلادة": collar, "الجنس": gender, "تاريخ الميلاد": birth_str, "عدد الولادات": births}
                     errors = validate_sheep_data(data)
                     if errors:
-                        for e in errors: st.error(f"❌ {e}")
+                        for e in errors:
+                            st.error(f"❌ {e}")
                     else:
                         new_id = str(uuid.uuid4())
                         new_row = pd.DataFrame([{
-                            "ID": new_id, "القلادة": collar, "الجنس": gender,
-                            "العمر": age, "وحدة": unit, "عدد الولادات": births,
-                            "الأم": mother or "", "الأبناء": "[]",
+                            "ID": new_id,
+                            "القلادة": collar,
+                            "الجنس": gender,
+                            "تاريخ الميلاد": birth_str,
+                            "عدد الولادات": births,
+                            "الأم": mother or "",
+                            "الأبناء": "[]",
                             "صورة": save_image_compressed(img),
-                            "اللقاحات": "[]", "الجرعات": "[]", "آخر تغطيس": ""
+                            "اللقاحات": "[]",
+                            "الجرعات": "[]",
+                            "آخر تغطيس": ""
                         }])
                         st.session_state.herd = pd.concat([st.session_state.herd, new_row], ignore_index=True)
                         if mother:
-                            m_idx = st.session_state.herd[st.session_state.herd["ID"]==mother].index[0]
+                            m_idx = st.session_state.herd[st.session_state.herd["ID"] == mother].index[0]
                             kids = safe_literal_eval(st.session_state.herd.at[m_idx, "الأبناء"])
                             kids.append(new_id)
                             st.session_state.herd.at[m_idx, "الأبناء"] = str(kids)
@@ -308,23 +363,31 @@ with tab4:
         if not st.session_state.herd.empty:
             target = st.selectbox("اختر رأساً:", st.session_state.herd["ID"].tolist(), format_func=format_sheep_label)
             if target:
-                idx = st.session_state.herd[st.session_state.herd["ID"]==target].index[0]
+                idx = st.session_state.herd[st.session_state.herd["ID"] == target].index[0]
                 row = st.session_state.herd.iloc[idx]
                 with st.form("edit"):
                     new_collar = st.text_input("القلادة*", value=row["القلادة"])
-                    new_gender = st.selectbox("الجنس*", ["أنثى","أنثى صغيرة","ذكر","ذكر صغير"], index=["أنثى","أنثى صغيرة","ذكر","ذكر صغير"].index(row["الجنس"]))
-                    new_age = st.number_input("العمر", min_value=0, value=int(row["العمر"]))
-                    new_unit = st.selectbox("الوحدة", ["شهر","سنة"], index=["شهر","سنة"].index(row.get("وحدة","شهر")))
+                    new_gender = st.selectbox("الجنس*", ["أنثى","أنثى صغيرة","ذكر","ذكر صغير"],
+                                              index=["أنثى","أنثى صغيرة","ذكر","ذكر صغير"].index(row["الجنس"]))
+                    # تاريخ الميلاد
+                    current_birth = row.get("تاريخ الميلاد", "")
+                    if current_birth:
+                        try:
+                            default_date = datetime.strptime(current_birth, "%Y-%m-%d").date()
+                        except:
+                            default_date = None
+                    else:
+                        default_date = None
+                    new_birth = st.date_input("تاريخ الميلاد", value=default_date, help="اختر تاريخ الميلاد")
                     new_births = st.number_input("عدد الولادات", min_value=0, value=int(row["عدد الولادات"]))
-                    new_mother = st.selectbox("الأم", [None]+st.session_state.herd["ID"].tolist(),
-                                              index=([None]+st.session_state.herd["ID"].tolist()).index(row.get("الأم")) if row.get("الأم") in [None]+st.session_state.herd["ID"].tolist() else 0,
+                    new_mother = st.selectbox("الأم", [None] + st.session_state.herd["ID"].tolist(),
+                                              index=([None] + st.session_state.herd["ID"].tolist()).index(row.get("الأم")) if row.get("الأم") in [None] + st.session_state.herd["ID"].tolist() else 0,
                                               format_func=lambda x: "بدون" if x is None else format_sheep_label(x))
                     new_img = st.file_uploader("تحديث الصورة", type=['jpg','png'])
                     if st.form_submit_button("💾 حفظ"):
                         st.session_state.herd.at[idx, "القلادة"] = new_collar
                         st.session_state.herd.at[idx, "الجنس"] = new_gender
-                        st.session_state.herd.at[idx, "العمر"] = new_age
-                        st.session_state.herd.at[idx, "وحدة"] = new_unit
+                        st.session_state.herd.at[idx, "تاريخ الميلاد"] = new_birth.strftime("%Y-%m-%d") if new_birth else ""
                         st.session_state.herd.at[idx, "عدد الولادات"] = new_births
                         st.session_state.herd.at[idx, "الأم"] = new_mother or ""
                         if new_img:
@@ -344,8 +407,8 @@ with tab4:
 
     with m3:
         st.download_button("📥 تحميل نسخة احتياطية",
-                           data=json.dumps({"herd":st.session_state.herd.to_dict(orient="records"),
-                                            "history":st.session_state.history.to_dict(orient="records")},
+                           data=json.dumps({"herd": st.session_state.herd.to_dict(orient="records"),
+                                            "history": st.session_state.history.to_dict(orient="records")},
                                             ensure_ascii=False, indent=2),
                            file_name=f"backup_{datetime.now().strftime('%Y-%m-%d')}.json",
                            mime="application/json")
@@ -366,8 +429,23 @@ with tab4:
 with tab5:
     st.subheader("📊 إحصائيات متقدمة")
     if not st.session_state.herd.empty:
-        df = st.session_state.herd
-        st.bar_chart(df["العمر"].value_counts().sort_index())
-        st.dataframe(df[["القلادة","الجنس","العمر","عدد الولادات"]])
-    else:
-        st.info("لا توجد بيانات")
+        df = st.session_state.herd.copy()
+        # حساب الأعمار الحالية لعرض توزيعها
+        ages = []
+        for _, row in df.iterrows():
+            birth = row.get("تاريخ الميلاد", "")
+            if birth:
+                age_str, _ = calculate_age(birth)
+                if age_str:
+                    # استخراج العدد بالشهور
+                    try:
+                        months = int(age_str.split()[0]) if "شهر" in age_str else int(age_str.split()[0])*12
+                        ages.append(months)
+                    except:
+                        ages.append(0)
+                else:
+                    ages.append(0)
+            else:
+                ages.append(0)
+        df["العمر_بالشهور"] = ages
+  
