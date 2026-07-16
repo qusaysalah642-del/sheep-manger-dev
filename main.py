@@ -192,7 +192,6 @@ st.markdown("""
     body { direction: rtl; }
     .stApp { background: #0b1f16; color: #eef6f0; }
     
-    /* أنيميشن للحقول */
     .stTextInput input, .stNumberInput input, .stDateInput input, .stSelectbox div[data-baseweb="select"] > div {
         transition: all 0.3s ease;
         border: 1px solid rgba(255,255,255,0.08) !important;
@@ -206,7 +205,6 @@ st.markdown("""
         transform: scale(1.02);
     }
     
-    /* أنيميشن للأزرار */
     .stButton > button {
         background: linear-gradient(135deg, #4c9a6a 0%, #2f6b48 100%);
         color: white;
@@ -225,7 +223,6 @@ st.markdown("""
         transform: scale(0.95);
     }
     
-    /* أنيميشن للبطاقات */
     [data-testid="stExpander"] {
         background: #123326;
         border-radius: 14px;
@@ -238,7 +235,6 @@ st.markdown("""
         box-shadow: 0 4px 20px rgba(76,154,106,0.1);
     }
     
-    /* أنيميشن للتبويبات */
     .stTabs [data-baseweb="tab"] {
         background: #123326;
         color: #93b3a1;
@@ -258,7 +254,6 @@ st.markdown("""
         box-shadow: 0 4px 15px rgba(76,154,106,0.3);
     }
     
-    /* أنيميشن للصورة */
     .stImage img {
         transition: all 0.5s ease;
         border-radius: 10px;
@@ -280,7 +275,6 @@ st.markdown("""
         100% { opacity: 1; transform: translateX(0); }
     }
     
-    /* ─── بطاقات الإحصائيات الأفقية ─── */
     .stats-container {
         display: flex;
         gap: 15px;
@@ -358,7 +352,7 @@ TREATMENT_OPTS = {
 # ─── الأقسام الرئيسية ──────────────────────────────────────────────
 tab1, tab2, tab3, tab4 = st.tabs(["🏠 القطيع", "💉 إجراء طبي", "📋 السجل", "➕ إدارة النظام"])
 
-# ─── 1. القطيع (مع بطاقات إحصائيات أفقية وترقيم الأبناء) ───
+# ─── 1. القطيع ───
 with tab1:
     st.subheader("📊 إحصائيات القطيع")
     df = st.session_state.herd
@@ -368,7 +362,6 @@ with tab1:
         females = len(df[df["الجنس"].isin(["أنثى", "أنثى صغيرة"])])
         young = len(df[df["الجنس"].str.contains("صغير", na=False)])
 
-        # عرض البطاقات الأفقية
         st.markdown(f"""
         <div class="stats-container">
             <div class="stat-card green">
@@ -419,7 +412,6 @@ with tab1:
                         if row.get('ملاحظات'):
                             st.write(f"**📝 ملاحظات:** {row['ملاحظات']}")
                         
-                        # ─── عرض الأبناء مع ترقيم ───
                         if row.get('الأبناء'):
                             kids = safe_literal_eval(row['الأبناء'])
                             if kids:
@@ -429,7 +421,9 @@ with tab1:
                                     if name and name != "(محذوف)":
                                         kids_names.append(f"{i}. {name}")
                                 if kids_names:
-                                    st.write(f"**الأبناء:** {', '.join(kids_names)}")
+                                    st.write("**الأبناء:**")
+                                    for kid in kids_names:
+                                        st.write(f"  • {kid}")
                                 else:
                                     st.write("**الأبناء:** لا يوجد")
     else:
