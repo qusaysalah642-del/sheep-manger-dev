@@ -202,6 +202,13 @@ if st.session_state.success_msg:
     st.success(st.session_state.success_msg)
     st.session_state.success_msg = None
 
+# ─── تعريف خيارات العلاج حسب نوع الإجراء (مركزية) ──────────────────────
+TREATMENT_OPTS = {
+    'تطعيم': ['إيفومك', 'معوي/دموي', 'طاعون', 'جدري'],
+    'جرعة طفيلية': ['جرعة كبدية', 'جرعة معوية'],
+    'تغطيس': ['تغطيس شامل']
+}
+
 # ─── الأقسام الرئيسية (تم حذف الإحصائيات) ────────────────────────────
 tab1, tab2, tab3, tab4 = st.tabs(["🏠 القطيع", "💉 إجراء طبي", "📋 السجل", "➕ إدارة النظام"])
 
@@ -255,11 +262,13 @@ with tab2:
     if not st.session_state.herd.empty:
         herd_ids = st.session_state.herd["ID"].tolist()
         selected = st.multiselect("اختر الأغنام:", herd_ids, format_func=format_sheep_label)
+        
         action = st.radio("النوع:", ["تطعيم", "جرعة طفيلية", "تغطيس"], horizontal=True)
-        opts = {'تطعيم': ['إيفومك', 'معوي/دموي', 'طاعون', 'جدري'],
-                'جرعة طفيلية': ['جرعة كبدية', 'جرعة معوية'],
-                'تغطيس': ['تغطيس شامل']}
-        treatment = st.selectbox("العلاج:", opts[action])
+        
+        # العلاج يعتمد على نوع الإجراء المختار
+        available_treatments = TREATMENT_OPTS.get(action, [])
+        treatment = st.selectbox("العلاج:", available_treatments)
+        
         date = str(st.date_input("التاريخ:"))
         img = st.file_uploader("صورة (اختياري)", type=['jpg','png'])
 
@@ -282,7 +291,7 @@ with tab2:
                 st.warning("اختر رأساً واحداً على الأقل.")
     else:
         st.warning("أضف أغناماً أولاً.")
-        # ─── 3. السجل الطبي (مع تعديل مباشر) ───
+        # ─── 3. السجل الطبي (مع تعديل مباشر وتصفية العلاج) ───
 with tab3:
     st.subheader("📋 السجل الطبي")
     if not st.session_state.history.empty:
@@ -296,6 +305,7 @@ with tab3:
                     # ─── نموذج التعديل ───
                     st.markdown('<div class="edit-mode">', unsafe_allow_html=True)
                     st.markdown("#### ✏️ تعديل السجل")
+                    
                     with st.form(key=f"edit_form_{row['ID']}"):
                         try:
                             curr_date = datetime.strptime(str(row["التاريخ"]), "%Y-%m-%d").date()
@@ -306,12 +316,27 @@ with tab3:
                         action_opts = ["تطعيم", "جرعة طفيلية", "تغطيس"]
                         curr_action = row.get("الإجراء", "تطعيم")
                         a_idx = action_opts.index(curr_action) if curr_action in action_opts else 0
-                        new_action = st.radio("نوع الإجراء:", action_opts, index=a_idx, horizontal=True)
+                        new_action = st.radio(
+                            "نوع الإجراء:",
+                            action_opts,
+                            index=a_idx,
+                            horizontal=True,
+                            key=f"action_radio_{row['ID']}"
+                        )
 
-                        all_opts = ['إيفومك', 'معوي/دموي', 'طاعون', 'جدري', 'جرعة كبدية', 'جرعة معوية', 'تغطيس شامل']
+                        # العلاج يعتمد على نوع الإجراء المختار
+                        available_treatments = TREATMENT_OPTS.get(new_action, [])
                         curr_treatment = row.get("العلاج", "")
-                        t_idx = all_opts.index(curr_treatment) if curr_treatment in all_opts else 0
-                        new_treatment = st.selectbox("العلاج:", all_opts, index=t_idx)
+                        if curr_treatment in available_treatments:
+                            t_idx = available_treatments.index(curr_treatment)
+                        else:
+                            t_idx = 0
+                        
+                        new_treatment = st.selectbox(
+                            "العلاج:",
+                            available_treatments,
+                            index=t_idx
+                        )
 
                         herd_ids = st.session_state.herd["ID"].tolist()
                         saved_collars = [c.strip() for c in str(row['الأغنام']).split(",")]
