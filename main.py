@@ -17,9 +17,31 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 st.set_page_config(page_title="Sheep Manager Pro", page_icon="🐑", layout="wide")
 
 # ─── تهيئة Session State ──────────────────────────────────────────────
-for key in ["success_msg", "toast", "editing_hist_id"]:
+for key in ["success_msg", "toast", "editing_hist_id", "splash_shown"]:
     if key not in st.session_state:
         st.session_state[key] = None
+
+# ─── شاشة ترحيب (تظهر مرة واحدة) ──────────────────────────────────────
+if not st.session_state.splash_shown:
+    st.markdown("""
+    <div id="splash" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#0b1f16; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; animation: fadeOut 2s ease-in forwards; animation-delay:1.5s;">
+        <div style="font-size:80px; background:#d3a15c; width:120px; height:120px; border-radius:30px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 40px rgba(211,161,92,0.3);">🐑</div>
+        <h1 style="color:white; font-size:32px; margin-top:20px;">Sheep Manager Pro</h1>
+        <p style="color:#93b3a1; font-size:16px;">إدارة القطيع، التطعيمات، والسجل الطبي</p>
+    </div>
+    <style>
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            100% { opacity: 0; pointer-events: none; }
+        }
+    </style>
+    <script>
+        setTimeout(() => {
+            document.getElementById('splash').style.display = 'none';
+        }, 3000);
+    </script>
+    """, unsafe_allow_html=True)
+    st.session_state.splash_shown = True
 
 if st.session_state.toast:
     st.toast(st.session_state.toast)
@@ -164,31 +186,117 @@ if "history" not in st.session_state:
     st.session_state.history = load_data(HISTORY_FILE, HISTORY_COLS)
 
 auto_backup()
-# ─── CSS ──────────────────────────────────────────────────────────────
+# ─── CSS مع أنيميشن ─────────────────────────────────────────────────
 st.markdown("""
 <style>
     body { direction: rtl; }
     .stApp { background: #0b1f16; color: #eef6f0; }
-    .stButton > button { background: #4c9a6a; color: white; border-radius: 10px; }
-    .stButton > button:hover { transform: scale(1.02); }
-    .stTabs [data-baseweb="tab"] { background: #123326; color: #93b3a1; border-radius: 20px; padding: 8px 16px; }
-    .stTabs [aria-selected="true"] { background: #4c9a6a !important; color: white !important; }
-    [data-testid="stExpander"] { background: #123326; border-radius: 14px; border: 1px solid #2a4a3a; }
-    .edit-mode { background: #1a3a2a; padding: 15px; border-radius: 10px; border: 1px solid #4c9a6a; }
-    .gender-male { border-right: 4px solid #4a90d9; }
-    .gender-female { border-right: 4px solid #e87a7a; }
+    
+    /* أنيميشن للحقول */
+    .stTextInput input, .stNumberInput input, .stDateInput input, .stSelectbox div[data-baseweb="select"] > div {
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255,255,255,0.08) !important;
+        border-radius: 10px !important;
+        background: #0b1f16 !important;
+        color: #eef6f0 !important;
+    }
+    .stTextInput input:focus, .stNumberInput input:focus, .stDateInput input:focus {
+        border-color: #4c9a6a !important;
+        box-shadow: 0 0 15px rgba(76,154,106,0.2) !important;
+        transform: scale(1.02);
+    }
+    
+    /* أنيميشن للأزرار */
+    .stButton > button {
+        background: linear-gradient(135deg, #4c9a6a 0%, #2f6b48 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 0;
+        width: 100%;
+        transition: all 0.3s ease;
+        font-weight: 700;
+    }
+    .stButton > button:hover {
+        transform: scale(1.05) translateY(-2px);
+        box-shadow: 0 8px 25px rgba(76,154,106,0.3);
+    }
+    .stButton > button:active {
+        transform: scale(0.95);
+    }
+    
+    /* أنيميشن للبطاقات */
+    [data-testid="stExpander"] {
+        background: #123326;
+        border-radius: 14px;
+        border: 1px solid rgba(255,255,255,0.08);
+        transition: all 0.3s ease;
+    }
+    [data-testid="stExpander"]:hover {
+        border-color: #4c9a6a;
+        transform: translateX(-3px);
+        box-shadow: 0 4px 20px rgba(76,154,106,0.1);
+    }
+    
+    /* أنيميشن للتبويبات */
+    .stTabs [data-baseweb="tab"] {
+        background: #123326;
+        color: #93b3a1;
+        border-radius: 20px;
+        padding: 8px 16px;
+        transition: all 0.3s ease;
+        border: 1px solid transparent;
+    }
+    .stTabs [data-baseweb="tab"]:hover {
+        background: #1a4a3a;
+        transform: translateY(-2px);
+    }
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #4c9a6a 0%, #2f6b48 100%) !important;
+        color: white !important;
+        border-color: #4c9a6a !important;
+        box-shadow: 0 4px 15px rgba(76,154,106,0.3);
+    }
+    
+    /* أنيميشن للصورة */
+    .stImage img {
+        transition: all 0.5s ease;
+        border-radius: 10px;
+    }
+    .stImage img:hover {
+        transform: scale(1.05);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    }
+    
+    .edit-mode {
+        background: #1a3a2a;
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid #4c9a6a;
+        animation: slideIn 0.5s ease;
+    }
+    @keyframes slideIn {
+        0% { opacity: 0; transform: translateX(-20px); }
+        100% { opacity: 1; transform: translateX(0); }
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # ─── الهيدر ──────────────────────────────────────────────────────────
 st.markdown("""
-<div style="display:flex; align-items:center; gap:15px; background:#123326; padding:20px; border-radius:18px; margin-bottom:20px;">
-    <div style="font-size:40px; background:#d3a15c; width:60px; height:60px; border-radius:15px; display:flex; align-items:center; justify-content:center;">🐑</div>
+<div style="display:flex; align-items:center; gap:15px; background:#123326; padding:20px; border-radius:18px; margin-bottom:20px; animation: fadeIn 0.8s ease;">
+    <div style="font-size:40px; background:#d3a15c; width:60px; height:60px; border-radius:15px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 20px rgba(211,161,92,0.2);">🐑</div>
     <div>
         <h1 style="margin:0; color:white;">Sheep Manager Pro</h1>
         <p style="margin:0; color:#93b3a1;">إدارة القطيع، التطعيمات، والسجل الطبي</p>
     </div>
 </div>
+<style>
+    @keyframes fadeIn {
+        0% { opacity: 0; transform: translateY(-20px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+</style>
 """, unsafe_allow_html=True)
 
 if st.session_state.success_msg:
@@ -221,61 +329,10 @@ with tab1:
         col3.metric("♀️ إناث", females)
         col4.metric("👶 صغار", young)
 
-        st.divider()
-
-        # ─── تصفية متقدمة ───
-        with st.expander("🔍 تصفية متقدمة", expanded=False):
-            col_f1, col_f2 = st.columns(2)
-            with col_f1:
-                age_filter = st.selectbox("العمر", ["الكل", "أقل من سنة", "1-2 سنة", "أكثر من سنتين"])
-            with col_f2:
-                birth_filter = st.selectbox("عدد الولادات", ["الكل", "0", "1", "2", "3+"])
-
-        # ─── رسم بياني ───
-        with st.expander("📊 رسوم بيانية", expanded=False):
-            # توزيع الأعمار (باستخدام st.bar_chart)
-            ages = []
-            for _, row in df.iterrows():
-                birth = row.get("تاريخ الميلاد", "")
-                _, age_val = calculate_age(birth)
-                if age_val > 0:
-                    ages.append(round(age_val, 1))
-            if ages:
-                age_df = pd.DataFrame({"العمر (سنوات)": ages})
-                st.bar_chart(age_df["العمر (سنوات)"].value_counts().sort_index())
-            
-            # توزيع الجنس
-            gender_counts = df["الجنس"].value_counts()
-            st.bar_chart(gender_counts)
-
-        # ─── البحث ───
         search_term = st.text_input("🔍 بحث بالقلادة", placeholder="اكتب للبحث...")
         filtered_df = df.copy()
         if search_term:
             filtered_df = filtered_df[filtered_df["القلادة"].str.contains(search_term, case=False, na=False)]
-
-        # تطبيق التصفية
-        if age_filter != "الكل":
-            if age_filter == "أقل من سنة":
-                filtered_df = filtered_df[filtered_df["تاريخ الميلاد"].apply(lambda x: calculate_age(x)[1] < 1 and calculate_age(x)[1] > 0)]
-            elif age_filter == "1-2 سنة":
-                filtered_df = filtered_df[filtered_df["تاريخ الميلاد"].apply(lambda x: 1 <= calculate_age(x)[1] < 2)]
-            else:
-                filtered_df = filtered_df[filtered_df["تاريخ الميلاد"].apply(lambda x: calculate_age(x)[1] >= 2)]
-        if birth_filter != "الكل":
-            if birth_filter == "0":
-                filtered_df = filtered_df[filtered_df["عدد الولادات"] == 0]
-            elif birth_filter == "1":
-                filtered_df = filtered_df[filtered_df["عدد الولادات"] == 1]
-            elif birth_filter == "2":
-                filtered_df = filtered_df[filtered_df["عدد الولادات"] == 2]
-            else:
-                filtered_df = filtered_df[filtered_df["عدد الولادات"] >= 3]
-
-        # ─── زر تصدير CSV ───
-        if not filtered_df.empty:
-            csv = filtered_df.to_csv(index=False).encode('utf-8')
-            st.download_button("📥 تصدير CSV", data=csv, file_name=f"sheep_export_{datetime.now().strftime('%Y-%m-%d')}.csv", mime="text/csv")
 
         if filtered_df.empty:
             st.info("لا توجد نتائج")
@@ -283,7 +340,6 @@ with tab1:
             for _, row in filtered_df.iterrows():
                 birth = row.get("تاريخ الميلاد", "")
                 age_str, _ = calculate_age(birth)
-                gender_class = "gender-male" if "ذكر" in row['الجنس'] else "gender-female"
 
                 with st.expander(f"🏷️ {row['القلادة']} - {row['الجنس']}"):
                     col_img, col_info = st.columns([1, 2])
