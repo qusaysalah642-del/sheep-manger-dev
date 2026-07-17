@@ -111,11 +111,6 @@ def safe_delete_image(path):
         except OSError:
             pass
 
-def safe_delete_images(paths):
-    if paths:
-        for path in paths:
-            safe_delete_image(path)
-
 def load_data(file, columns):
     if not os.path.exists(file):
         return pd.DataFrame(columns=columns)
@@ -333,48 +328,6 @@ st.markdown("""
     .stat-card.blue .stat-number { color: #4a90d9; }
     .stat-card.pink .stat-number { color: #e87a7a; }
     .stat-card.gold .stat-number { color: #d3a15c; }
-    
-    .images-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin: 10px 0;
-    }
-    .image-item {
-        position: relative;
-        display: inline-block;
-    }
-    .image-item img {
-        width: 120px;
-        height: 120px;
-        object-fit: cover;
-        border-radius: 10px;
-        border: 2px solid rgba(255,255,255,0.1);
-        transition: all 0.3s ease;
-    }
-    .image-item img:hover {
-        border-color: #4c9a6a;
-        transform: scale(1.05);
-    }
-    .delete-img-btn {
-        position: absolute;
-        top: -8px;
-        right: -8px;
-        background: #e2665a;
-        color: white;
-        border: none;
-        border-radius: 50%;
-        width: 24px;
-        height: 24px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: bold;
-        transition: all 0.3s ease;
-    }
-    .delete-img-btn:hover {
-        transform: scale(1.2);
-        background: #d44a3a;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -409,7 +362,7 @@ TREATMENT_OPTS = {
 # ─── الأقسام الرئيسية ──────────────────────────────────────────────
 tab1, tab2, tab3, tab4 = st.tabs(["🏠 القطيع", "💉 إجراء طبي", "📋 السجل", "➕ إدارة النظام"])
 
-# ─── 1. القطيع (مع التحقق من الصور) ───
+# ─── 1. القطيع ───
 with tab1:
     st.subheader("📊 إحصائيات القطيع")
     df = st.session_state.herd
@@ -709,7 +662,6 @@ with tab4:
                 row = st.session_state.herd.iloc[idx]
                 images = safe_literal_eval(row.get("الصور", "[]"))
                 
-                # تصفية الصور الموجودة فقط
                 valid_images = [img for img in images if os.path.exists(img)]
                 if len(valid_images) != len(images):
                     st.session_state.herd.at[idx, "الصور"] = str(valid_images)
